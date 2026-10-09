@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% t "Kirish" %}{% endblock %}
+{% block public %}
+<div class="login-wrap">
+  <div class="card login-card p-4">
+    <div class="text-center mb-3">
+      <div class="display-6 text-brand"><i class="bi bi-shop"></i></div>
+      <h1 class="h4 fw-bold mb-0">{{ shop_name }}</h1>
+      <div class="text-muted small">{% t "Do'kon CRM" %}</div>
+    </div>
+    {% if error %}<div class="alert alert-danger py-2">{{ error|tr }}</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">{% t "Login" %}</label>
+        <input name="username" class="form-control form-control-lg" autofocus required autocomplete="username">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">{% t "Parol" %}</label>
+        <input name="password" type="password" class="form-control form-control-lg" required autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-lg w-100">{% t "Kirish" %}</button>
+    </form>
+    <form method="post" action="{% url 'set_language' %}" class="d-flex gap-2 justify-content-center mt-3">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button name="lang" value="uz" class="btn btn-sm btn-link {% if lang == 'uz' %}fw-bold{% endif %}">O'zbek</button>
+      <button name="lang" value="ru" class="btn btn-sm btn-link {% if lang == 'ru' %}fw-bold{% endif %}">Русский</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

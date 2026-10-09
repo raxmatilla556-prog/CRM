@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{% t "Sotuvlar" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="page-title">{% t "Sotuvlar" %}</h1>
+  <form class="d-flex gap-2 align-items-center">
+    <input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control">
+    <span>—</span>
+    <input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control">
+    <button class="btn btn-secondary"><i class="bi bi-funnel"></i></button>
+  </form>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card stat"><div class="label">{% t "Jami" %}</div><div class="value">{{ totals.total|money }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat"><div class="label">{% t "Naqd" %}</div><div class="value text-success">{{ totals.cash|money }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat"><div class="label">{% t "Qarzga" %}</div><div class="value text-danger">{{ totals.debt|money }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat"><div class="label">{% t "Vozvrat" %}</div><div class="value text-warning">{{ totals.returned|money }}</div></div></div>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>#</th><th>{% t "Sana" %}</th><th>{% t "Sotuvchi" %}</th><th>{% t "Klient" %}</th><th class="num">{% t "Jami" %}</th><th class="num">{% t "Naqd" %}</th><th class="num">{% t "Qarzga" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for s in page %}
+    <tr>
+      <td>{{ s.pk }}</td><td class="text-nowrap">{{ s.created_at|date:"d.m.Y H:i" }}</td><td>{{ s.seller }}</td>
+      <td>{% if s.customer %}<a href="{% url 'sales:customer_detail' s.customer_id %}">{{ s.customer.name }}</a>{% else %}—{% endif %}</td>
+      <td class="num fw-semibold">{{ s.total|money }}{% if s.returned %}<div class="small text-warning">↩ −{{ s.returned|money }}</div>{% endif %}</td><td class="num">{{ s.paid_cash|money }}</td>
+      <td class="num {% if s.debt_amount %}text-danger fw-semibold{% endif %}">{{ s.debt_amount|money }}</td>
+      <td class="text-end text-nowrap">
+        <a href="{% url 'sales:receipt' s.pk %}" class="btn btn-sm btn-outline-secondary" title="{% t 'Chek' %}"><i class="bi bi-printer"></i></a>
+        {% if s.returnable %}<a href="{% url 'sales:sale_return' s.pk %}" class="btn btn-sm btn-outline-warning" title="{% t 'Vozvrat' %}"><i class="bi bi-arrow-counterclockwise"></i></a>{% endif %}
+      </td>
+    </tr>
+  {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% include "core/_pagination.html" %}
+{% endblock %}

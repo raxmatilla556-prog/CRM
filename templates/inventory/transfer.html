@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{% t "Ko'chirish" %}{% endblock %}
+{% block content %}
+<h1 class="page-title mb-3">{% t "Ko'chirish" %}</h1>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card"><div class="card-body">
+      <form method="post" id="transfer-form">{% csrf_token %}
+        {% for e in form.non_field_errors %}<div class="alert alert-danger py-2">{{ e|tr }}</div>{% endfor %}
+        <div class="mb-3">
+          <label class="form-label">{% t "Nomi" %}</label>
+          <div class="picker" id="picker">
+            <input class="form-control" data-picker-input autocomplete="off" autofocus placeholder="{% t 'Qidirish' %}...">
+            <input type="hidden" name="product">
+          </div>
+          {% for e in form.product.errors %}<div class="text-danger small">{{ e|tr }}</div>{% endfor %}
+          <div class="small mt-2 d-none" id="stock-info">
+            <span class="badge text-bg-light">{% t "Omborda" %}: <b id="wq">0</b></span>
+            <span class="badge text-bg-light">{% t "Do'konda" %}: <b id="sq">0</b></span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{% t "Qayerdan" %} → {% t "Qayerga" %}</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="from_location" id="fw" value="warehouse" checked>
+            <label class="btn btn-outline-primary" for="fw">{% t "Ombor" %} → {% t "Do'kon" %}</label>
+            <input type="radio" class="btn-check" name="from_location" id="fs" value="store">
+            <label class="btn btn-outline-primary" for="fs">{% t "Do'kon" %} → {% t "Ombor" %}</label>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{% t "Miqdor" %}</label>
+          <input name="qty" class="form-control" inputmode="decimal" required>
+          {% for e in form.qty.errors %}<div class="text-danger small">{{ e|tr }}</div>{% endfor %}
+        </div>
+        <button class="btn btn-primary w-100"><i class="bi bi-arrow-left-right"></i> {% t "Ko'chirish" %}</button>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>{% t "Sana" %}</th><th>{% t "Nomi" %}</th><th>{% t "Qayerdan" %} → {% t "Qayerga" %}</th><th class="num">{% t "Miqdor" %}</th><th>{% t "Foydalanuvchi" %}</th></tr></thead>
+        <tbody>
+        {% for t in transfers %}
+          <tr><td class="text-muted text-nowrap">{{ t.created_at|date:"d.m H:i" }}</td><td>{{ t.product.name }}</td>
+            <td>{{ t.get_from_location_display|tr }} → {{ t.get_to_location_display|tr }}</td>
+            <td class="num">{{ t.qty|qty }} {{ t.product.unit }}</td><td class="small">{{ t.created_by }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+new ProductPicker(document.getElementById('picker'), {
+  url: "{% url 'inventory:product_api' %}",
+  renderMeta: p => `{% t "Omborda" %}: ${App.qty(p.warehouse_qty)} · {% t "Do'konda" %}: ${App.qty(p.store_qty)}`,
+  onSelect: p => {
+    document.getElementById('wq').textContent = App.qty(p.warehouse_qty) + ' ' + p.unit;
+    document.getElementById('sq').textContent = App.qty(p.store_qty) + ' ' + p.unit;
+    document.getElementById('stock-info').classList.remove('d-none');
+    document.querySelector('[name=qty]').focus();
+  },
+});
+</script>
+{% endblock %}

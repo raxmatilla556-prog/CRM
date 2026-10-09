@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{% t "Kirim" %} #{{ receipt.pk }}{% endblock %}
+{% block content %}
+<a href="{% url 'inventory:receipt_list' %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Ortga" %}</a>
+<div class="card">
+  <div class="card-header d-flex justify-content-between"><span>{% t "Kirim" %} #{{ receipt.pk }}</span><span class="text-muted">{{ receipt.created_at|date:"d.m.Y H:i" }}</span></div>
+  <div class="card-body pb-0">
+    <p class="mb-1">{% t "Yetkazib beruvchi" %}: <b>{{ receipt.supplier|default:"—" }}</b></p>
+    <p class="mb-1">{% t "Foydalanuvchi" %}: {{ receipt.created_by }}</p>
+    {% if receipt.note %}<p class="text-muted">{{ receipt.note }}</p>{% endif %}
+  </div>
+  <div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Miqdor" %}</th><th class="num">{% t "Tannarx" %}</th><th class="num">{% t "Summa" %}</th><th>{% t "Yaroqlilik muddati" %}</th></tr></thead>
+    <tbody>{% for i in items %}
+      <tr><td>{{ i.product.name }}</td><td class="num">{{ i.qty|qty }} {{ i.product.unit }}</td><td class="num">{{ i.cost_price|money }}</td><td class="num">{{ i.total|money }}</td><td>{{ i.expiry_date|date:"d.m.Y"|default:"—" }}</td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr class="fw-bold"><td colspan="3">{% t "Jami" %}</td><td class="num">{{ receipt.total_cost|money }} {% t "so'm" %}</td><td></td></tr></tfoot>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{% t "Klient" %}{% endblock %}
+{% block content %}
+<a href="{% if instance %}{% url 'sales:customer_detail' instance.pk %}{% else %}{% url 'sales:debt_book' %}{% endif %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Ortga" %}</a>
+<div class="card" style="max-width:560px">
+  <div class="card-header">{% if instance %}{{ instance.name }}{% else %}{% t "Yangi klient" %}{% endif %}</div>
+  <div class="card-body">
+    <form method="post">{% csrf_token %}
+      {% include "core/_form_fields.html" %}
+      <button class="btn btn-primary">{% t "Saqlash" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

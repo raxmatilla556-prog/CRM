@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{% t "Yangi inventarizatsiya" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="page-title">{% t "Yangi inventarizatsiya" %}</h1>
+  <div class="btn-group">
+    {% for value, label in locations %}
+      <a href="?location={{ value }}" class="btn {% if value == location %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ label|tr }}</a>
+    {% endfor %}
+  </div>
+</div>
+<div class="alert alert-info small">
+  {% t "Faqat sanagan tovarlaringiz sonini kiriting. Bo'sh qatorlar o'zgarmaydi." %}
+</div>
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="location" value="{{ location }}">
+  <div class="card mb-3">
+    <div class="card-body pb-0"><input id="filter" class="form-control mb-3" placeholder="{% t 'Qidirish' %}..."></div>
+    <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+      <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Tizimda" %}</th><th style="width:140px">{% t "Haqiqiy" %}</th><th class="num">{% t "Farq" %}</th></tr></thead>
+      <tbody>
+      {% for p in products %}
+        <tr data-name="{{ p.name|lower }}">
+          <td>{{ p.name }}</td>
+          <td class="num sys">{% if location == 'store' %}{{ p.store_qty|qty }}{% else %}{{ p.warehouse_qty|qty }}{% endif %}</td>
+          <td><input name="actual_{{ p.pk }}" class="form-control form-control-sm actual" inputmode="decimal"></td>
+          <td class="num diff"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6"><label class="form-label">{% t "Izoh" %}</label><input name="note" class="form-control"></div>
+    <div class="col-auto"><button class="btn btn-primary btn-lg"><i class="bi bi-check2"></i> {% t "Saqlash" %}</button></div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('filter').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('tbody tr').forEach(tr => tr.classList.toggle('d-none', !tr.dataset.name.includes(q)));
+});
+document.querySelectorAll('.actual').forEach(input => input.addEventListener('input', () => {
+  const tr = input.closest('tr');
+  const cell = tr.querySelector('.diff');
+  if (input.value.trim() === '') { cell.textContent = ''; return; }
+  const d = App.num(input.value) - App.num(tr.querySelector('.sys').textContent);
+  cell.textContent = (d > 0 ? '+' : '') + App.qty(d);
+  cell.className = 'num diff ' + (d < 0 ? 'text-danger fw-bold' : d > 0 ? 'text-success fw-bold' : '');
+}));
+document.querySelector('form').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.classList.contains('actual')) {
+    e.preventDefault();
+    const all = [...document.querySelectorAll('tbody tr:not(.d-none) .actual')];
+    const next = all[all.indexOf(e.target) + 1];
+    if (next) next.focus();
+  }
+});
+</script>
+{% endblock %}

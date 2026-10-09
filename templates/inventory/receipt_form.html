@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{% t "Yangi kirim" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="page-title">{% t "Yangi kirim" %}</h1>
+  <a href="{% url 'inventory:product_create' %}?back=receipt" class="btn btn-outline-secondary"><i class="bi bi-plus-lg"></i> {% t "Yangi tovar" %}</a>
+</div>
+{% for e in errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+<form method="post" id="receipt-form">{% csrf_token %}
+  <div class="card mb-3"><div class="card-body row g-2">
+    <div class="col-md-4">
+      <label class="form-label">{% t "Yetkazib beruvchi" %}</label>
+      <div class="input-group">
+        <select name="supplier" class="form-select"><option value="">—</option>
+          {% for s in suppliers %}<option value="{{ s.pk }}">{{ s }}</option>{% endfor %}
+        </select>
+        <a href="{% url 'inventory:suppliers' %}" class="btn btn-outline-secondary" title="{% t "Qo'shish" %}"><i class="bi bi-plus"></i></a>
+      </div>
+    </div>
+    <div class="col-md-8"><label class="form-label">{% t "Izoh" %}</label><input name="note" class="form-control"></div>
+  </div></div>
+
+  <div class="card">
+    <div class="table-responsive" style="overflow: visible">
+      <table class="table align-middle mb-0">
+        <thead><tr>
+          <th style="min-width:240px">{% t "Nomi" %}</th><th>{% t "Miqdor" %}</th><th>{% t "Tannarx" %}</th>
+          <th>{% t "Sotuv narxi" %}</th><th>{% t "Yaroqlilik muddati" %}</th><th class="num">{% t "Summa" %}</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr>
+          <td colspan="5"><button type="button" class="btn btn-sm btn-outline-primary" id="add-row"><i class="bi bi-plus-lg"></i> {% t "Qatordan qo'shish" %}</button></td>
+          <td class="num fw-bold fs-5" id="grand">0</td><td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="mt-3"><button class="btn btn-primary btn-lg"><i class="bi bi-check2"></i> {% t "Saqlash" %}</button></div>
+</form>
+
+<template id="row-tpl">
+  <tr>
+    <td><div class="picker">
+      <input class="form-control form-control-sm" data-picker-input autocomplete="off" placeholder="{% t 'Qidirish' %}...">
+      <input type="hidden" name="product">
+      <small class="text-muted meta"></small>
+    </div></td>
+    <td><input name="qty" class="form-control form-control-sm" inputmode="decimal" style="width:90px"></td>
+    <td><input name="cost" class="form-control form-control-sm" inputmode="decimal" style="width:110px"></td>
+    <td><input name="sale_price" class="form-control form-control-sm" inputmode="decimal" style="width:110px"></td>
+    <td><input name="expiry" type="date" class="form-control form-control-sm"></td>
+    <td class="num line-total">0</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger remove"><i class="bi bi-x-lg"></i></button></td>
+  </tr>
+</template>
+{% endblock %}
+{% block scripts %}
+<script>
+const rows = document.getElementById('rows');
+const tpl = document.getElementById('row-tpl');
+const url = "{% url 'inventory:product_api' %}";
+
+function recalc() {
+  let grand = 0;
+  rows.querySelectorAll('tr').forEach(tr => {
+    const t = App.num(tr.querySelector('[name=qty]').value) * App.num(tr.querySelector('[name=cost]').value);
+    tr.querySelector('.line-total').textContent = App.money(t);
+    grand += t;
+  });
+  document.getElementById('grand').textContent = App.money(grand);
+}
+
+function addRow() {
+  const tr = tpl.content.firstElementChild.cloneNode(true);
+  rows.appendChild(tr);
+  new ProductPicker(tr.querySelector('.picker'), {
+    url,
+    renderMeta: p => `{% t "Omborda" %}: ${App.qty(p.warehouse_qty)}`,
+    onSelect: p => {
+      tr.querySelector('[name=cost]').value = App.num(p.cost_price) || '';
+      tr.querySelector('[name=sale_price]').value = App.num(p.sale_price) || '';
+      tr.querySelector('.meta').textContent = `{% t "Omborda" %}: ${App.qty(p.warehouse_qty)} ${p.unit}`;
+      tr.querySelector('[name=qty]').focus();
+      if (tr === rows.lastElementChild) addRow();
+      recalc();
+    },
+  });
+  tr.querySelector('.remove').addEventListener('click', () => { tr.remove(); recalc(); });
+  tr.querySelectorAll('[name=qty],[name=cost]').forEach(i => i.addEventListener('input', recalc));
+  return tr;
+}
+addRow().querySelector('[data-picker-input]').focus();
+document.getElementById('add-row').addEventListener('click', () => addRow().querySelector('[data-picker-input]').focus());
+// Picker ichida Enter bosilganda formani yubormaslik
+document.getElementById('receipt-form').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('input:not([type=submit])')) e.preventDefault();
+});
+</script>
+{% endblock %}

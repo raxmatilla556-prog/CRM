@@ -1,0 +1,86 @@
+{% load static %}<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% t "Chek" %} #{{ sale.pk }}</title>
+<style>
+  /* 58 mm printer uchun: --paper: 58mm */
+  :root { --paper: 80mm; }
+  @page { size: var(--paper) auto; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e5e7eb; font-family: "Courier New", monospace; color: #000; }
+  .receipt { width: var(--paper); margin: 1rem auto; background: #fff; padding: 4mm; font-size: 12px; line-height: 1.35; }
+  .center { text-align: center; }
+  .shop { font-size: 16px; font-weight: bold; }
+  hr { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; padding: 0; }
+  .r { text-align: right; white-space: nowrap; }
+  .big { font-size: 15px; font-weight: bold; }
+  .actions { text-align: center; margin: 1rem; font-family: system-ui, sans-serif; }
+  .actions a, .actions button { display: inline-block; padding: .6rem 1.2rem; margin: .2rem; border-radius: .5rem; border: 0; font-size: 1rem; cursor: pointer; text-decoration: none; }
+  .btn-print { background: #0f766e; color: #fff; }
+  .btn-new { background: #0f172a; color: #fff; }
+  @media print {
+    body { background: #fff; }
+    .receipt { margin: 0; width: 100%; }
+    .actions { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="receipt">
+  <div class="center shop">{{ shop_name }}</div>
+  {% if shop_address %}<div class="center">{{ shop_address }}</div>{% endif %}
+  {% if shop_phone %}<div class="center">{% t "Telefon" %}: {{ shop_phone }}</div>{% endif %}
+  <hr>
+  <div>{% t "Chek" %} #{{ sale.pk }}</div>
+  <div>{% t "Sana" %}: {{ sale.created_at|date:"d.m.Y H:i" }}</div>
+  <div>{% t "Sotuvchi" %}: {{ sale.seller }}</div>
+  <hr>
+  <table>
+    {% for i in items %}
+    <tr><td colspan="2">{{ i.product.name }}</td></tr>
+    <tr><td>&nbsp; {{ i.qty|qty }} x {{ i.price|money }}</td><td class="r">{{ i.total|money }}</td></tr>
+    {% endfor %}
+  </table>
+  <hr>
+  <table>
+    {% if sale.discount %}
+    <tr><td>{% t "Chegirma" %}</td><td class="r">-{{ sale.discount|money }}</td></tr>
+    {% endif %}
+    <tr class="big"><td>{% t "Jami" %}</td><td class="r">{{ sale.total|money }} {% t "so'm" %}</td></tr>
+    <tr><td>{% t "Naqd" %}</td><td class="r">{{ sale.paid_cash|money }}</td></tr>
+    {% if sale.debt_amount %}
+    <tr><td><b>{% t "Qarzga" %}</b></td><td class="r"><b>{{ sale.debt_amount|money }}</b></td></tr>
+    {% endif %}
+  </table>
+  {% if sale.customer %}
+  <hr>
+  <div>{% t "Klient" %}: {{ sale.customer.name }}</div>
+  {% if sale.due_date %}<div>{% t "To'lov muddati" %}: {{ sale.due_date|date:"d.m.Y" }}</div>{% endif %}
+  <div>{% t "Umumiy qarz" %}: <b>{{ customer_balance|money }} {% t "so'm" %}</b></div>
+  {% endif %}
+  {% for r in returns %}
+  <hr>
+  <div><b>{% t "Vozvrat" %}</b> {{ r.created_at|date:"d.m.Y H:i" }}</div>
+  <table>
+    {% for it in r.items.all %}
+    <tr><td>{{ it.sale_item.product.name }} × {{ it.qty|qty }}</td><td class="r">−{{ it.qty|mul:it.price|money }}</td></tr>
+    {% endfor %}
+    <tr><td>{% t "Naqd qaytarildi" %}</td><td class="r">{{ r.cash_refund|money }}</td></tr>
+    {% if r.debt_reduction %}<tr><td>{% t "Qarzdan ayrildi" %}</td><td class="r">{{ r.debt_reduction|money }}</td></tr>{% endif %}
+  </table>
+  {% endfor %}
+  <hr>
+  <div class="center">{% t "Xaridingiz uchun rahmat!" %}</div>
+</div>
+<div class="actions">
+  <button class="btn-print" onclick="window.print()">🖨 {% t "Chop etish" %}</button>
+  <a class="btn-new" href="{% url 'sales:pos' %}">＋ {% t "Kassa" %}</a>
+  {% if can_return %}<a class="btn-new" style="background:#b45309" href="{% url 'sales:sale_return' sale.pk %}">↩ {% t "Vozvrat" %}</a>{% endif %}
+</div>
+{% if autoprint %}<script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>{% endif %}
+</body>
+</html>

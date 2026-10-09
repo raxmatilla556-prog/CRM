@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% t "Inventarizatsiya" %} #{{ count.pk }}{% endblock %}
+{% block content %}
+<a href="{% url 'inventory:count_list' %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Ortga" %}</a>
+<div class="card">
+  <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+    <span>{% t "Inventarizatsiya" %} #{{ count.pk }} · {{ count.get_location_display|tr }}</span>
+    <span class="text-muted">{{ count.created_at|date:"d.m.Y H:i" }} · {{ count.created_by }}</span>
+  </div>
+  {% if count.note %}<div class="card-body pb-0 text-muted">{{ count.note }}</div>{% endif %}
+  <div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Tizimda" %}</th><th class="num">{% t "Haqiqiy" %}</th><th class="num">{% t "Farq" %}</th><th class="num">{% t "Summa" %}</th></tr></thead>
+    <tbody>{% for i in items %}
+      <tr class="{% if i.difference < 0 %}table-danger{% elif i.difference > 0 %}table-success{% endif %}">
+        <td>{{ i.product.name }}</td><td class="num">{{ i.system_qty|qty }}</td><td class="num">{{ i.actual_qty|qty }}</td>
+        <td class="num fw-semibold">{{ i.difference|qty }}</td><td class="num">{{ i.difference_value|money }}</td>
+      </tr>
+    {% endfor %}</tbody>
+    <tfoot><tr class="fw-bold"><td colspan="4">{% t "Kamomad summasi" %} / {% t "Farq" %}</td><td class="num">{{ count.loss_value|money }} {% t "so'm" %}</td></tr></tfoot>
+  </table></div>
+</div>
+{% endblock %}

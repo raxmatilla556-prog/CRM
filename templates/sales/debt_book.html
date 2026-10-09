@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{% t "Qarz daftari" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="page-title">{% t "Qarz daftari" %}</h1>
+  <a href="{% url 'sales:customer_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> {% t "Yangi klient" %}</a>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-sm-6"><div class="card stat"><div class="label">{% t "Umumiy qarz" %}</div><div class="value text-danger">{{ total_debt|money }} <small class="fs-6">{% t "so'm" %}</small></div></div></div>
+  <div class="col-sm-6"><div class="card stat"><div class="label">{% t "Muddati o'tgan" %}</div><div class="value {% if overdue_count %}text-danger{% endif %}">{{ overdue_count }}</div></div></div>
+</div>
+<form class="card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-md-6"><input name="q" value="{{ q }}" class="form-control" placeholder="{% t 'Qidirish' %}: {% t 'Ism' %} / {% t 'Telefon' %}"></div>
+    <div class="col-auto">
+      <select name="show" class="form-select" onchange="this.form.submit()">
+        <option value="debtors" {% if show == 'debtors' %}selected{% endif %}>{% t "Qarzdorlar" %}</option>
+        <option value="all" {% if show == 'all' %}selected{% endif %}>{% t "Klientlar" %}: {% t "Hammasi" %}</option>
+      </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-secondary"><i class="bi bi-search"></i></button></div>
+  </div>
+</form>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>{% t "Klient" %}</th><th>{% t "Telefon" %}</th><th class="num">{% t "Qarz qoldig'i" %}</th><th>{% t "Eng yaqin muddat" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for c in customers %}
+    <tr class="{% if c.overdue %}row-overdue{% endif %}">
+      <td class="fw-semibold"><a href="{% url 'sales:customer_detail' c.pk %}" class="text-decoration-none">{{ c.name }}</a>
+        {% if c.telegram_chat_id %}<i class="bi bi-telegram text-primary" title="Telegram"></i>{% endif %}</td>
+      <td>{{ c.phone }}</td>
+      <td class="num fw-bold {% if c.balance_value > 0 %}text-danger{% endif %}">{{ c.balance_value|money }}</td>
+      <td>{% if c.due %}{{ c.due|date:"d.m.Y" }}{% if c.overdue %} <span class="badge text-bg-danger">{% t "Muddati o'tgan" %}</span>{% endif %}{% else %}—{% endif %}</td>
+      <td class="text-end"><a href="{% url 'sales:customer_detail' c.pk %}" class="btn btn-sm btn-outline-primary">{% t "Batafsil" %}</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% endblock %}

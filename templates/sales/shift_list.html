@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{% t "Smenalar" %}{% endblock %}
+{% block content %}
+<h1 class="page-title mb-3">{% t "Smenalar" %}</h1>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>#</th><th>{% t "Sotuvchi" %}</th><th>{% t "Ochildi" %}</th><th>{% t "Yopildi" %}</th><th class="num">{% t "Kutilgan naqd" %}</th><th class="num">{% t "Haqiqiy naqd" %}</th><th class="num">{% t "Farq" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for s in page %}
+    <tr class="{% if s.difference and s.difference < 0 %}row-overdue{% endif %}">
+      <td>{{ s.pk }}</td><td>{{ s.seller }}</td><td class="text-nowrap">{{ s.opened_at|date:"d.m.Y H:i" }}</td>
+      <td class="text-nowrap">{% if s.is_open %}<span class="badge text-bg-success">{% t "Ochiq smena" %}</span>{% else %}{{ s.closed_at|date:"d.m.Y H:i" }}{% endif %}</td>
+      <td class="num">{{ s.expected_cash|money }}</td><td class="num">{{ s.actual_cash|money }}</td>
+      <td class="num fw-bold {% if s.difference < 0 %}text-danger{% elif s.difference > 0 %}text-warning{% else %}text-success{% endif %}">{% if s.difference is not None %}{{ s.difference|money }}{% endif %}</td>
+      <td class="text-end"><a href="{% url 'sales:shift_detail' s.pk %}" class="btn btn-sm btn-outline-secondary">{% t "Batafsil" %}</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% include "core/_pagination.html" %}
+{% endblock %}

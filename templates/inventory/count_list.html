@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{% t "Inventarizatsiya" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="page-title">{% t "Inventarizatsiya" %}</h1>
+  <div class="d-flex gap-2">
+    <a href="{% url 'inventory:count_create' %}?location=warehouse" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {% t "Ombor" %}</a>
+    <a href="{% url 'inventory:count_create' %}?location=store" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> {% t "Do'kon" %}</a>
+  </div>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>#</th><th>{% t "Sana" %}</th><th>{% t "Joy" %}</th><th>{% t "Foydalanuvchi" %}</th><th class="num">{% t "Farq" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for c in counts %}
+    <tr><td>{{ c.pk }}</td><td>{{ c.created_at|date:"d.m.Y H:i" }}</td><td>{{ c.get_location_display|tr }}</td><td>{{ c.created_by }}</td>
+      <td class="num {% if c.loss_value < 0 %}text-danger{% elif c.loss_value > 0 %}text-success{% endif %}">{{ c.loss_value|money }} {% t "so'm" %}</td>
+      <td class="text-end"><a href="{% url 'inventory:count_detail' c.pk %}" class="btn btn-sm btn-outline-secondary">{% t "Batafsil" %}</a></td></tr>
+  {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% endblock %}

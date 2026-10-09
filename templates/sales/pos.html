@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}{% t "Kassa" %}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <!-- Chap: qidiruv va savat -->
+  <div class="col-xl-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="picker" id="pos-picker">
+          <div class="input-group input-group-lg">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input class="form-control" data-picker-input autocomplete="off" autofocus
+                   placeholder="{% t 'Tovar nomini yozing' %}">
+          </div>
+        </div>
+        <div id="pos-error" class="text-danger small mt-2"></div>
+        {% if shift %}<div class="small text-muted mt-1"><i class="bi bi-clock"></i> {% t "Ochiq smena" %}: {{ shift.opened_at|date:"d.m H:i" }} · <a href="{% url 'sales:shift' %}">{% t "Smenani yopish" %}</a></div>{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header d-flex justify-content-between"><span><i class="bi bi-cart3"></i> {% t "Savat" %}</span>
+        <button class="btn btn-sm btn-outline-danger" id="clear-cart"><i class="bi bi-trash"></i></button></div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0 cart-table">
+          <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Narx" %}</th><th>{% t "Miqdor" %}</th><th class="num">{% t "Summa" %}</th><th></th></tr></thead>
+          <tbody id="cart"></tbody>
+        </table>
+      </div>
+      <div id="cart-empty" class="text-center text-muted py-5"><i class="bi bi-cart fs-1 d-block"></i>{% t "Savat bo'sh" %}</div>
+    </div>
+  </div>
+
+  <!-- O'ng: to'lov -->
+  <div class="col-xl-4">
+    <div class="card position-sticky" style="top:1rem">
+      <div class="card-body">
+        <div class="d-flex justify-content-between text-muted"><span>{% t "Jami" %}</span><span id="subtotal">0</span></div>
+        <div class="d-flex justify-content-between align-items-center my-2">
+          <label for="discount" class="text-muted">{% t "Chegirma" %}</label>
+          <input id="discount" class="form-control form-control-sm text-end" style="width:130px" inputmode="numeric" value="0">
+        </div>
+        <hr>
+        <div class="text-muted small">{% t "To'lanadigan" %}</div>
+        <div class="pos-total mb-3"><span id="total">0</span> <small class="fs-6">{% t "so'm" %}</small></div>
+
+        <label class="form-label" for="cash">{% t "Olingan naqd pul" %}</label>
+        <div class="input-group mb-2">
+          <input id="cash" class="form-control form-control-lg text-end" inputmode="numeric">
+          <button class="btn btn-outline-secondary" id="all-debt" type="button" title="{% t 'Qarzga' %}"><i class="bi bi-journal-text"></i> {% t "Qarzga" %}</button>
+        </div>
+        <div class="d-flex justify-content-between fs-5" id="change-row"><span>{% t "Qaytim" %}</span><b id="change" class="text-success">0</b></div>
+        <div class="d-flex justify-content-between fs-5 d-none" id="debt-row"><span>{% t "Qarzga" %}</span><b id="debt" class="text-danger">0</b></div>
+
+        <!-- Qarz bo'lsa klient -->
+        <div id="customer-box" class="border rounded p-2 mt-3 d-none bg-light">
+          <label class="form-label small mb-1">{% t "Klient" %} <span class="text-danger">*</span></label>
+          <div class="picker" id="customer-picker">
+            <input class="form-control" data-picker-input autocomplete="off" placeholder="{% t 'Klient tanlang' %}...">
+            <input type="hidden" id="customer-id">
+          </div>
+          <div id="customer-info" class="small mt-1"></div>
+          <button type="button" class="btn btn-link btn-sm px-0" id="new-customer-toggle"><i class="bi bi-person-plus"></i> {% t "Yangi klient" %}</button>
+          <div id="new-customer" class="d-none">
+            <input id="nc-name" class="form-control form-control-sm mb-1" placeholder="{% t 'Ism' %}">
+            <input id="nc-phone" class="form-control form-control-sm mb-1" placeholder="{% t 'Telefon' %} +998..." inputmode="tel">
+          </div>
+          <label class="form-label small mb-1 mt-2">{% t "To'lov muddati" %}</label>
+          <input type="date" id="due-date" class="form-control form-control-sm" value="{{ default_due|date:'Y-m-d' }}">
+        </div>
+
+        <button class="btn btn-primary btn-lg w-100 mt-3" id="sell" disabled><i class="bi bi-check2-circle"></i> {% t "Sotish" %} <small class="opacity-75">(F2)</small></button>
+      </div>
+    </div>
+  </div>
+</div>
+{% csrf_token %}
+{% endblock %}
+{% block scripts %}
+<script>
+const cart = new Map(); // id -> {product, qty}
+const $ = id => document.getElementById(id);
+const err = msg => { $('pos-error').textContent = msg || ''; };
+let cashTouched = false;
+
+const productPicker = new ProductPicker($('pos-picker'), {
+  url: "{% url 'inventory:product_api' %}",
+  renderMeta: p => `{% t "Do'konda" %}: ${App.qty(p.store_qty)} ${App.escape(p.unit)}`,
+  onSelect: (p, picker) => { addToCart(p); picker.clear(); picker.input.focus(); },
+});
+
+function addToCart(p) {
+  err();
+  if (App.num(p.store_qty) <= 0) { err(`${p.name}: {% t "Yetarli tovar yo'q" %}`); return; }
+  const line = cart.get(p.id);
+  if (line) line.qty = Math.min(line.qty + 1, App.num(p.store_qty));
+  else cart.set(p.id, {product: p, qty: 1, price: App.num(p.sale_price)});
+  render();
+}
+
+function render() {
+  const tbody = $('cart');
+  tbody.innerHTML = '';
+  for (const [id, line] of cart) {
+    const p = line.product;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="fw-semibold">${App.escape(p.name)}</div><small class="text-muted">{% t "Do'konda" %}: ${App.qty(p.store_qty)} ${App.escape(p.unit)}</small></td>
+      <td class="num"><input class="form-control form-control-sm text-end price" style="width:110px;display:inline-block" inputmode="numeric" value="${Math.round(line.price)}" title="{% t "Narxni o'zgartirish" %}">
+        ${line.price !== App.num(p.sale_price) ? `<div class="small text-warning text-decoration-line-through">${App.money(p.sale_price)}</div>` : ''}</td>
+      <td><div class="input-group input-group-sm" style="width:140px">
+        <button class="btn btn-outline-secondary minus" type="button">−</button>
+        <input class="form-control text-center qty" value="${App.qty(line.qty)}" inputmode="decimal">
+        <button class="btn btn-outline-secondary plus" type="button">+</button></div></td>
+      <td class="num fw-semibold">${App.money(line.qty * line.price)}</td>
+      <td class="text-end"><button class="btn btn-sm btn-outline-danger del" type="button"><i class="bi bi-x-lg"></i></button></td>`;
+    const setQty = q => {
+      const max = App.num(p.store_qty);
+      if (q > max) { err(`${p.name}: {% t "Yetarli tovar yo'q" %} (${App.qty(max)})`); q = max; }
+      if (q <= 0) { cart.delete(id); } else { line.qty = q; }
+      render();
+    };
+    tr.querySelector('.minus').onclick = () => setQty(line.qty - 1);
+    tr.querySelector('.plus').onclick = () => setQty(line.qty + 1);
+    tr.querySelector('.qty').onchange = e => setQty(App.num(e.target.value));
+    tr.querySelector('.price').onchange = e => {
+      const price = App.num(e.target.value);
+      line.price = price > 0 ? price : App.num(p.sale_price);
+      render();
+    };
+    tr.querySelector('.del').onclick = () => { cart.delete(id); render(); };
+    tbody.appendChild(tr);
+  }
+  $('cart-empty').classList.toggle('d-none', cart.size > 0);
+  recalc();
+}
+
+function totals() {
+  let subtotal = 0;
+  for (const {qty, price} of cart.values()) subtotal += Math.round(qty * price * 100) / 100;
+  const discount = Math.min(Math.max(App.num($('discount').value), 0), subtotal);
+  return {subtotal, discount, total: subtotal - discount};
+}
+
+function recalc() {
+  const {subtotal, total} = totals();
+  $('subtotal').textContent = App.money(subtotal);
+  $('total').textContent = App.money(total);
+  if (!cashTouched) $('cash').value = total ? Math.round(total) : '';
+  const cash = App.num($('cash').value);
+  const change = Math.max(cash - total, 0);
+  const debt = Math.max(total - cash, 0);
+  $('change').textContent = App.money(change);
+  $('debt').textContent = App.money(debt);
+  $('change-row').classList.toggle('d-none', debt > 0);
+  $('debt-row').classList.toggle('d-none', debt <= 0);
+  $('customer-box').classList.toggle('d-none', debt <= 0);
+  $('sell').disabled = cart.size === 0;
+}
+
+$('discount').addEventListener('input', recalc);
+$('cash').addEventListener('input', () => { cashTouched = true; recalc(); });
+$('all-debt').addEventListener('click', () => { cashTouched = true; $('cash').value = 0; recalc(); });
+$('clear-cart').addEventListener('click', () => { cart.clear(); cashTouched = false; render(); });
+
+// Klient tanlash
+new ProductPicker($('customer-picker'), {
+  url: "{% url 'sales:customer_api' %}",
+  renderMeta: c => `${App.escape(c.phone || '')} · {% t "Qarz" %}: ${App.money(c.balance)}`,
+  onSelect: c => {
+    $('customer-info').innerHTML = `<span class="text-muted">{% t "Qarz qoldig'i" %}:</span> <b class="text-danger">${App.money(c.balance)}</b>`;
+    $('new-customer').classList.add('d-none');
+  },
+});
+document.querySelector('#customer-picker [data-picker-input]').addEventListener('input', () => { $('customer-info').textContent = ''; });
+$('new-customer-toggle').addEventListener('click', () => {
+  $('new-customer').classList.toggle('d-none');
+  $('customer-id').value = '';
+  document.querySelector('#customer-picker [data-picker-input]').value = '';
+  $('nc-name').focus();
+});
+
+async function sell() {
+  if (!cart.size || $('sell').disabled) return;
+  const {discount, total} = totals();
+  const cash = App.num($('cash').value);
+  const payload = {
+    items: [...cart.values()].map(l => ({
+      id: l.product.id, qty: l.qty,
+      price: l.price !== App.num(l.product.sale_price) ? l.price : null,
+    })),
+    discount, cash: Math.min(cash, total),
+  };
+  if (total - cash > 0) {
+    payload.customer_id = $('customer-id').value || null;
+    payload.new_customer = {name: $('nc-name').value, phone: $('nc-phone').value};
+    payload.due_date = $('due-date').value;
+    if (!payload.customer_id && !payload.new_customer.name.trim()) { err('{% t "Klient tanlang" %}'); return; }
+  }
+  $('sell').disabled = true;
+  try {
+    const r = await fetch("{% url 'sales:checkout' %}", {
+      method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': App.csrf()},
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    if (!data.ok) { err(data.error); $('sell').disabled = false; return; }
+    location.href = "{% url 'sales:receipt' 0 %}".replace('/0/', `/${data.sale_id}/`) + '?print=1';
+  } catch (e) {
+    err(String(e)); $('sell').disabled = false;
+  }
+}
+$('sell').addEventListener('click', sell);
+document.addEventListener('keydown', e => { if (e.key === 'F2') { e.preventDefault(); sell(); } });
+render();
+</script>
+{% endblock %}

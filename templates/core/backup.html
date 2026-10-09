@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{% t "Zaxira nusxa" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="page-title">{% t "Zaxira nusxa" %}</h1>
+  <form method="post">{% csrf_token %}
+    <button class="btn btn-primary"><i class="bi bi-download"></i> {% t "Hozir nusxa olish va yuklab olish" %}</button>
+  </form>
+</div>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-alarm"></i> {% t "Avtomatik vazifalar" %} ({% t "Bugun" %})</div>
+      <ul class="list-group list-group-flush">
+      {% for j in jobs %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>{% if j.name == 'daily_report' %}{% t "Kunlik hisobot" %}{% elif j.name == 'debt_reminders' %}{% t "Qarz eslatmalari" %}{% else %}{% t "Zaxira nusxa" %}{% endif %}
+            <small class="text-muted">· {{ j.time }}</small></span>
+          {% if j.run %}
+            {% if j.run.success %}<span class="badge text-bg-success" title="{{ j.run.detail }}"><i class="bi bi-check2"></i> {{ j.run.created_at|date:"H:i" }}</span>
+            {% else %}<span class="badge text-bg-danger" title="{{ j.run.detail }}"><i class="bi bi-x"></i> {{ j.run.created_at|date:"H:i" }}</span>{% endif %}
+          {% else %}<span class="badge text-bg-light">{% t "Kutilmoqda" %}</span>{% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+      <div class="card-body small text-muted">{% t "Vazifalar Telegram bot ishlab turganda bajariladi. Zaxira nusxa Telegramga ham yuboriladi." %}</div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card"><div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>{% t "Fayl" %}</th><th class="num">{% t "Hajmi" %}</th><th></th></tr></thead>
+        <tbody>
+        {% for b in backups %}
+          <tr><td>{{ b.name }}</td><td class="num">{{ b.size|filesizeformat }}</td>
+            <td class="text-end"><a href="{% url 'backup_download' b.name %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i></a></td></tr>
+        {% empty %}<tr><td colspan="3" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

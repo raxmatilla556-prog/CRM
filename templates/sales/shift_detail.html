@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% t "Smena" %} #{{ shift.pk }}{% endblock %}
+{% block content %}
+<a href="{% if user.is_owner %}{% url 'sales:shift_list' %}{% else %}{% url 'sales:shift' %}{% endif %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Ortga" %}</a>
+<div class="card" style="max-width:560px">
+  <div class="card-header d-flex justify-content-between"><span>{% t "Smena" %} #{{ shift.pk }} · {{ shift.seller }}</span>
+    {% if shift.is_open %}<span class="badge text-bg-success">{% t "Ochiq smena" %}</span>{% endif %}</div>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Ochildi" %}</span><span>{{ shift.opened_at|date:"d.m.Y H:i" }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Yopildi" %}</span><span>{{ shift.closed_at|date:"d.m.Y H:i"|default:"—" }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Boshlang'ich naqd" %}</span><b>{{ shift.opening_cash|money }}</b></li>
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Sotuvlar" %} ({{ totals.sales_count }})</span><b>{{ totals.sales_total|money }}</b></li>
+    <li class="list-group-item d-flex justify-content-between"><span>+ {% t "Naqd" %} ({% t "Sotuv" %})</span><span>{{ totals.sales_cash|money }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>+ {% t "Qarz to'lovi" %}</span><span>{{ totals.debt_payments|money }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>− {% t "Vozvrat" %}</span><span>{{ totals.cash_refunds|money }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Kutilgan naqd" %}</span><b>{{ shift.expected_cash|default_if_none:totals.expected|money }}</b></li>
+    {% if not shift.is_open %}
+    <li class="list-group-item d-flex justify-content-between"><span>{% t "Haqiqiy naqd" %}</span><b>{{ shift.actual_cash|money }}</b></li>
+    <li class="list-group-item d-flex justify-content-between fs-5 {% if shift.difference < 0 %}text-danger{% elif shift.difference > 0 %}text-warning{% else %}text-success{% endif %}">
+      <span>{% t "Farq" %}</span><b>{{ shift.difference|money }}</b></li>
+    {% endif %}
+    {% if shift.note %}<li class="list-group-item text-muted small">{{ shift.note }}</li>{% endif %}
+  </ul>
+</div>
+{% endblock %}

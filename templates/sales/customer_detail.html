@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<a href="{% url 'sales:debt_book' %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Qarz daftari" %}</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="page-title">{{ customer.name }}</h1>
+    <div class="text-muted">{{ customer.phone }}{% if customer.telegram_chat_id %} · <i class="bi bi-telegram text-primary"></i> Telegram{% endif %}</div>
+    {% if customer.note %}<div class="small text-muted">{{ customer.note }}</div>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'sales:customer_edit' customer.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> {% t "Tahrirlash" %}</a>
+    {% if can_delete_customer %}
+    <form method="post" action="{% url 'sales:customer_delete' customer.pk %}" data-confirm="{% t "Klientni o'chirasizmi?" %}">{% csrf_token %}
+      <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+    </form>
+    {% endif %}
+    {% if customer.balance > 0 %}
+    <form method="post" action="{% url 'sales:customer_remind' customer.pk %}">{% csrf_token %}
+      <button class="btn btn-outline-primary"><i class="bi bi-bell"></i> {% t "Eslatma yuborish" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card stat"><div class="label">{% t "Qarz qoldig'i" %}</div>
+    <div class="value {% if customer.balance > 0 %}text-danger{% else %}text-success{% endif %}">{{ customer.balance|money }} <small class="fs-6">{% t "so'm" %}</small></div></div></div>
+  <div class="col-md-4"><div class="card stat"><div class="label">{% t "Eng yaqin muddat" %}</div>
+    <div class="value {% if customer.is_overdue %}text-danger{% endif %}">{{ customer.nearest_due_date|date:"d.m.Y"|default:"—" }}</div></div></div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <form method="post" class="d-flex gap-2">{% csrf_token %}
+        <input type="hidden" name="action" value="pay">
+        <input name="amount" class="form-control" inputmode="numeric" placeholder="{% t 'Summa' %}" required {% if customer.balance <= 0 %}disabled{% endif %}>
+        <button class="btn btn-success text-nowrap" {% if customer.balance <= 0 %}disabled{% endif %}><i class="bi bi-cash"></i> {% t "To'lov qabul qilish" %}</button>
+      </form>
+    </div></div>
+  </div>
+</div>
+
+{% if unpaid %}
+<div class="card mb-3">
+  <div class="card-header">{% t "Qarz" %}</div>
+  <div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>{% t "Sotuv" %}</th><th>{% t "Sana" %}</th><th class="num">{% t "Qarzga" %}</th><th class="num">{% t "Qarz qoldig'i" %}</th><th>{% t "To'lov muddati" %}</th></tr></thead>
+    <tbody>{% for s in unpaid %}
+      <tr class="{% if s.overdue %}row-overdue{% endif %}"><td><a href="{% url 'sales:receipt' s.pk %}">#{{ s.pk }}</a></td><td>{{ s.created_at|date:"d.m.Y" }}</td>
+        <td class="num">{{ s.debt_amount|money }}</td><td class="num fw-semibold text-danger">{{ s.remaining|money }}</td>
+        <td>{{ s.due_date|date:"d.m.Y"|default:"—" }}{% if s.overdue %} <span class="badge text-bg-danger">{% t "Muddati o'tgan" %}</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-header">{% t "Xaridlar tarixi" %}</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>{% t "Sana" %}</th><th>{% t "Tovarlar" %}</th><th class="num">{% t "Jami" %}</th><th class="num">{% t "Qarzga" %}</th></tr></thead>
+        <tbody>{% for s in sales %}
+          <tr><td class="text-nowrap"><a href="{% url 'sales:receipt' s.pk %}">{{ s.created_at|date:"d.m.Y H:i" }}</a></td>
+            <td class="small">{% for i in s.items.all %}{{ i.product.name }} × {{ i.qty|qty }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td class="num">{{ s.total|money }}</td><td class="num {% if s.debt_amount %}text-danger{% endif %}">{{ s.debt_amount|money }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">{% t "Hech narsa topilmadi" %}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header">{% t "To'lovlar" %}</div>
+      <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>{% t "Sana" %}</th><th class="num">{% t "Summa" %}</th><th>{% t "Foydalanuvchi" %}</th><th></th></tr></thead>
+        <tbody>{% for p in payments %}
+          <tr><td>{{ p.created_at|date:"d.m.Y H:i" }}</td><td class="num text-success fw-semibold">{{ p.amount|money }}</td><td class="small">{{ p.received_by }}</td>
+            <td class="text-end">{% if p.deletable %}
+              <form method="post" action="{% url 'sales:payment_delete' p.pk %}" class="d-inline" data-confirm="{% t "To'lovni o'chirasizmi?" %}">{% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger py-0" title="{% t "O'chirish" %}"><i class="bi bi-trash"></i></button></form>
+            {% endif %}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">{% t "Hech narsa topilmadi" %}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+    {% if reminders %}
+    <div class="card">
+      <div class="card-header">{% t "Eslatma yuborish" %}</div>
+      <ul class="list-group list-group-flush small">{% for r in reminders %}
+        <li class="list-group-item d-flex justify-content-between"><span>{{ r.created_at|date:"d.m.Y H:i" }} · {{ r.channel }}</span>
+          {% if r.success %}<i class="bi bi-check-circle text-success"></i>{% else %}<span class="text-danger" title="{{ r.detail }}"><i class="bi bi-x-circle"></i></span>{% endif %}</li>
+      {% endfor %}</ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

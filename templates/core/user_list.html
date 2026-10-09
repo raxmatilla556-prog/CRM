@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% t "Xodimlar" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="page-title">{% t "Xodimlar" %}</h1>
+  <a href="{% url 'user_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {% t "Yangi xodim" %}</a>
+</div>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover align-middle mb-0">
+  <thead><tr><th>{% t "Login" %}</th><th>{% t "Ism" %}</th><th>{% t "Telefon" %}</th><th>{% t "Rol" %}</th><th>{% t "Faol" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td class="fw-semibold">{{ u.username }}</td>
+      <td>{{ u.get_full_name }}</td>
+      <td>{{ u.phone }}</td>
+      <td><span class="badge {% if u.role == 'owner' %}text-bg-dark{% elif u.role == 'warehouse' %}text-bg-info{% else %}text-bg-success{% endif %}">{{ u.get_role_display|tr }}</span></td>
+      <td>{% if u.is_active %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}</td>
+      <td class="text-end"><a href="{% url 'user_edit' u.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div></div>
+{% endblock %}

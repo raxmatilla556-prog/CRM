@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title|tr }}{% endblock %}
+{% block content %}
+<h1 class="page-title mb-3">{{ title|tr }}</h1>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card"><div class="card-header">{% if instance %}{% t "Tahrirlash" %}: {{ instance }}{% else %}{% t "Qo'shish" %}{% endif %}</div><div class="card-body">
+      <form method="post">{% csrf_token %}{% include "core/_form_fields.html" %}
+        <button class="btn btn-primary">{% t "Saqlash" %}</button>
+        {% if instance %}<a href="{{ request.path }}" class="btn btn-link">{% t "Bekor qilish" %}</a>{% endif %}
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card"><div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>{% t "Nomi" %}</th>{% if kind == 'supplier' %}<th>{% t "Telefon" %}</th><th>{% t "Izoh" %}</th>{% endif %}<th></th></tr></thead>
+        <tbody>
+        {% for item in items %}
+          <tr class="{% if instance.pk == item.pk %}table-active{% endif %}"><td class="fw-semibold">{{ item.name }}</td>
+            {% if kind == 'supplier' %}<td>{{ item.phone }}</td><td class="small text-muted">{{ item.note }}</td>{% endif %}
+            <td class="text-end text-nowrap">
+              <a href="?edit={{ item.pk }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+              <form method="post" class="d-inline" data-confirm="{% t "O'chirasizmi?" %}">{% csrf_token %}<input type="hidden" name="delete" value="{{ item.pk }}"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+            </td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">{% t "Hech narsa topilmadi" %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

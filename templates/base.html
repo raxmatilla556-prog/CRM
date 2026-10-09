@@ -1,0 +1,83 @@
+{% load static %}<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% t "Do'kon CRM" %}{% endblock %} · {{ shop_name }}</title>
+  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'app.css' %}" rel="stylesheet">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<nav class="navbar navbar-dark topbar d-lg-none px-3">
+  <button class="btn btn-outline-light btn-sm" data-bs-toggle="offcanvas" data-bs-target="#sidebar"><i class="bi bi-list"></i></button>
+  <span class="navbar-brand mb-0 h6">{{ shop_name }}</span>
+  <span></span>
+</nav>
+<div class="d-flex">
+  <aside class="offcanvas-lg offcanvas-start sidebar" tabindex="-1" id="sidebar">
+    <div class="p-3 border-bottom border-secondary-subtle">
+      <div class="fw-bold fs-5 text-white"><i class="bi bi-shop"></i> {{ shop_name }}</div>
+      <div class="small text-white-50">{{ user }} · {% if user.is_owner %}{% t "Ega" %}{% elif user.is_warehouse %}{% t "Omborchi" %}{% else %}{% t "Sotuvchi" %}{% endif %}</div>
+    </div>
+    <nav class="nav flex-column p-2">
+      {% with p=request.path %}
+      {% if user.is_owner %}
+        <div class="nav-section">{% t "Ega" %}</div>
+        <a class="nav-link {% if '/hisobot/' in p %}active{% endif %}" href="{% url 'reports:dashboard' %}"><i class="bi bi-graph-up"></i> {% t "Hisobotlar" %}</a>
+        <a class="nav-link {% if '/xodimlar/' in p %}active{% endif %}" href="{% url 'user_list' %}"><i class="bi bi-people"></i> {% t "Xodimlar" %}</a>
+        <a class="nav-link {% if '/harakatlar/' in p %}active{% endif %}" href="{% url 'action_log' %}"><i class="bi bi-clock-history"></i> {% t "Harakatlar tarixi" %}</a>
+        <a class="nav-link {% if '/smenalar/' in p %}active{% endif %}" href="{% url 'sales:shift_list' %}"><i class="bi bi-cash-coin"></i> {% t "Smenalar" %}</a>
+        <a class="nav-link {% if '/zaxira/' in p %}active{% endif %}" href="{% url 'backup' %}"><i class="bi bi-database-down"></i> {% t "Zaxira nusxa" %}</a>
+      {% endif %}
+      {% if user.is_owner or user.is_seller %}
+        <div class="nav-section">{% t "Sotuvchi" %}</div>
+        <a class="nav-link {% if '/kassa/' in p %}active{% endif %}" href="{% url 'sales:pos' %}"><i class="bi bi-cart3"></i> {% t "Kassa" %}</a>
+        <a class="nav-link {% if '/smena/' in p %}active{% endif %}" href="{% url 'sales:shift' %}"><i class="bi bi-clock"></i> {% t "Smena" %}</a>
+        <a class="nav-link {% if '/sotuvlar/' in p %}active{% endif %}" href="{% url 'sales:sale_list' %}"><i class="bi bi-receipt"></i> {% t "Sotuvlar" %}</a>
+        <a class="nav-link {% if '/qarz-daftari/' in p or '/klient/' in p %}active{% endif %}" href="{% url 'sales:debt_book' %}"><i class="bi bi-journal-text"></i> {% t "Qarz daftari" %}</a>
+      {% endif %}
+      <div class="nav-section">{% t "Ombor" %}</div>
+      <a class="nav-link {% if p == '/ombor/' or '/tovar/' in p %}active{% endif %}" href="{% url 'inventory:stock' %}"><i class="bi bi-box-seam"></i> {% t "Tovarlar" %}</a>
+      <a class="nav-link {% if '/ogohlantirishlar/' in p %}active{% endif %}" href="{% url 'inventory:alerts' %}"><i class="bi bi-exclamation-triangle"></i> {% t "Ogohlantirishlar" %}</a>
+      {% if user.is_owner or user.is_warehouse %}
+        <a class="nav-link {% if '/kirim/' in p %}active{% endif %}" href="{% url 'inventory:receipt_list' %}"><i class="bi bi-box-arrow-in-down"></i> {% t "Kirim" %}</a>
+        <a class="nav-link {% if '/kochirish/' in p %}active{% endif %}" href="{% url 'inventory:transfer' %}"><i class="bi bi-arrow-left-right"></i> {% t "Ko'chirish" %}</a>
+        <a class="nav-link {% if '/inventarizatsiya/' in p %}active{% endif %}" href="{% url 'inventory:count_list' %}"><i class="bi bi-clipboard-check"></i> {% t "Inventarizatsiya" %}</a>
+        <a class="nav-link {% if '/yetkazib-beruvchilar/' in p %}active{% endif %}" href="{% url 'inventory:suppliers' %}"><i class="bi bi-truck"></i> {% t "Yetkazib beruvchilar" %}</a>
+        <a class="nav-link {% if '/kategoriyalar/' in p %}active{% endif %}" href="{% url 'inventory:categories' %}"><i class="bi bi-tags"></i> {% t "Kategoriyalar" %}</a>
+      {% endif %}
+      {% endwith %}
+    </nav>
+    <div class="p-3 mt-auto border-top border-secondary-subtle">
+      <form method="post" action="{% url 'set_language' %}" class="d-flex gap-1 mb-2">
+        {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button name="lang" value="uz" class="btn btn-sm {% if lang == 'uz' %}btn-light{% else %}btn-outline-light{% endif %} flex-fill">O'zbek</button>
+        <button name="lang" value="ru" class="btn btn-sm {% if lang == 'ru' %}btn-light{% else %}btn-outline-light{% endif %} flex-fill">Русский</button>
+      </form>
+      <a href="{% url 'password_change' %}" class="btn btn-sm btn-outline-light w-100 mb-2"><i class="bi bi-key"></i> {% t "Parolni almashtirish" %}</a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-box-arrow-right"></i> {% t "Chiqish" %}</button>
+      </form>
+    </div>
+  </aside>
+  <main class="flex-grow-1 main-content">
+    {% for m in messages %}
+      <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show">
+        {{ m|tr }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  {% block public %}{% endblock %}
+{% endif %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script>window.LANG = "{{ lang }}";</script>
+<script src="{% static 'app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

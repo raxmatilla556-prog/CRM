@@ -1,0 +1,62 @@
+:root {
+  --brand: #0f766e;
+  --brand-dark: #115e59;
+  --sidebar-bg: #0f172a;
+  --page-bg: #f1f5f9;
+}
+
+body { background: var(--page-bg); font-size: .95rem; }
+.topbar { background: var(--sidebar-bg); }
+
+.sidebar {
+  background: var(--sidebar-bg);
+  width: 250px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* Bootstrap offcanvas-lg katta ekranda fonni shaffof qiladi - qaytarib qo'yamiz */
+.sidebar.offcanvas-lg { background-color: var(--sidebar-bg) !important; }
+@media (min-width: 992px) {
+  .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-direction: column; }
+}
+.sidebar .offcanvas-body, .sidebar { color: #cbd5e1; }
+.sidebar .nav-link { color: #cbd5e1; border-radius: .5rem; padding: .5rem .75rem; display: flex; gap: .6rem; }
+.sidebar .nav-link:hover { background: rgba(255,255,255,.07); color: #fff; }
+.sidebar .nav-link.active { background: var(--brand); color: #fff; }
+.nav-section { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: #64748b; padding: .9rem .75rem .3rem; }
+
+.main-content { padding: 1.5rem; min-width: 0; }
+@media (max-width: 576px) { .main-content { padding: 1rem; } }
+
+.page-title { font-weight: 700; font-size: 1.4rem; margin-bottom: 0; }
+.card { border: 0; border-radius: .9rem; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+.card-header { background: transparent; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+
+.btn-primary { --bs-btn-bg: var(--brand); --bs-btn-border-color: var(--brand); --bs-btn-hover-bg: var(--brand-dark); --bs-btn-hover-border-color: var(--brand-dark); --bs-btn-active-bg: var(--brand-dark); }
+.text-brand { color: var(--brand); }
+
+.stat { padding: 1rem 1.2rem; }
+.stat .label { color: #64748b; font-size: .8rem; }
+.stat .value { font-size: 1.45rem; font-weight: 700; line-height: 1.2; }
+.stat .icon { width: 42px; height: 42px; border-radius: .7rem; display: grid; place-items: center; font-size: 1.2rem; }
+
+.table > :not(caption) > * > * { padding: .55rem .7rem; }
+.table thead th { font-size: .78rem; text-transform: uppercase; color: #64748b; font-weight: 600; white-space: nowrap; }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row-overdue { background: #fef2f2 !important; }
+.row-overdue td { background: transparent !important; }
+
+/* Kassa */
+.pos-results { max-height: 340px; overflow-y: auto; }
+.pos-results .list-group-item { cursor: pointer; }
+.pos-results .list-group-item.active-item { background: #ecfeff; }
+.pos-total { font-size: 2rem; font-weight: 800; color: var(--brand); }
+.cart-table input { max-width: 90px; }
+
+.picker { position: relative; }
+.picker-menu { position: absolute; z-index: 1050; left: 0; right: 0; top: 100%; max-height: 260px; overflow-y: auto; }
+
+/* Login */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #0f172a, #0f766e); padding: 1rem; }
+.login-card { width: 100%; max-width: 380px; }

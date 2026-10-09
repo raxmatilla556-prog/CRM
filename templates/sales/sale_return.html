@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{% t "Vozvrat" %} #{{ sale.pk }}{% endblock %}
+{% block content %}
+<a href="{% url 'sales:sale_list' %}" class="btn btn-link px-0"><i class="bi bi-arrow-left"></i> {% t "Sotuvlar" %}</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="page-title">{% t "Vozvrat" %} · {% t "Sotuv" %} #{{ sale.pk }}</h1>
+    <div class="text-muted small">{{ sale.created_at|date:"d.m.Y H:i" }} · {{ sale.seller }}{% if sale.customer %} · {% t "Klient" %}: {{ sale.customer.name }}{% endif %}</div>
+  </div>
+  <div class="text-end">
+    <div class="small text-muted">{% t "Jami" %}</div>
+    <div class="fs-4 fw-bold">{{ sale.total|money }} {% t "so'm" %}</div>
+    {% if sale.discount %}<div class="small text-muted">{% t "Chegirma" %}: {{ sale.discount|money }}</div>{% endif %}
+  </div>
+</div>
+
+<form method="post">{% csrf_token %}
+  <div class="card mb-3"><div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Narx" %}</th><th class="num">{% t "Sotilgan" %}</th><th class="num">{% t "Qaytarilgan" %}</th><th style="width:150px">{% t "Qaytarish" %}</th><th class="num">{% t "Summa" %}</th></tr></thead>
+      <tbody>
+      {% for i in items %}
+        <tr data-price="{{ i.price|stringformat:'s' }}">
+          <td class="fw-semibold">{{ i.product.name }}</td>
+          <td class="num">{{ i.price|money }}</td>
+          <td class="num">{{ i.qty|qty }} {{ i.product.unit }}</td>
+          <td class="num text-muted">{{ i.returned_qty|qty }}</td>
+          <td>{% if i.available > 0 %}
+            <div class="input-group input-group-sm">
+              <input name="qty_{{ i.pk }}" class="form-control ret-qty" inputmode="decimal" placeholder="0" data-max="{{ i.available|stringformat:'s' }}">
+              <button type="button" class="btn btn-outline-secondary all" title="{% t 'Hammasi' %}">{{ i.available|qty }}</button>
+            </div>
+          {% else %}<span class="badge text-bg-secondary">{% t "Qaytarilgan" %}</span>{% endif %}</td>
+          <td class="num line">0</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr class="fw-bold"><td colspan="5">{% t "Qaytariladigan summa" %}{% if sale.discount %} <small class="text-muted fw-normal">({% t "chegirma hisobga olinadi" %})</small>{% endif %}</td><td class="num fs-5" id="ret-total">0</td></tr></tfoot>
+    </table>
+  </div></div>
+  {% if sale.customer %}
+  <div class="alert alert-info small"><i class="bi bi-info-circle"></i> {% t "Klientning qarzi bo'lsa, summa avval qarzdan ayriladi, qolgani naqd qaytariladi." %}
+    {% t "Qarz qoldig'i" %}: <b>{{ sale.customer.balance|money }}</b></div>
+  {% endif %}
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6"><label class="form-label">{% t "Sabab" %}</label><input name="reason" class="form-control" maxlength="255"></div>
+    <div class="col-auto"><button class="btn btn-danger btn-lg"><i class="bi bi-arrow-counterclockwise"></i> {% t "Vozvrat qilish" %}</button></div>
+  </div>
+</form>
+
+{% if returns %}
+<div class="card mt-4">
+  <div class="card-header">{% t "Oldingi qaytarishlar" %}</div>
+  <ul class="list-group list-group-flush">
+  {% for r in returns %}
+    <li class="list-group-item small">
+      <div class="d-flex justify-content-between"><span>{{ r.created_at|date:"d.m.Y H:i" }} · {{ r.created_by }}</span><b class="text-danger">−{{ r.total|money }}</b></div>
+      <div class="text-muted">{% for it in r.items.all %}{{ it.sale_item.product.name }} × {{ it.qty|qty }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if r.reason %} · {{ r.reason }}{% endif %}</div>
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const factor = {{ sale.total|stringformat:'s' }} / ({{ sale.total|stringformat:'s' }} + {{ sale.discount|stringformat:'s' }} || 1);
+function recalc() {
+  let total = 0;
+  document.querySelectorAll('tbody tr').forEach(tr => {
+    const input = tr.querySelector('.ret-qty');
+    if (!input) return;
+    let q = App.num(input.value);
+    const max = App.num(input.dataset.max);
+    if (q > max) { q = max; input.value = App.qty(max); }
+    const v = q * App.num(tr.dataset.price) * factor;
+    tr.querySelector('.line').textContent = App.money(v);
+    total += v;
+  });
+  document.getElementById('ret-total').textContent = App.money(total);
+}
+document.querySelectorAll('.ret-qty').forEach(i => i.addEventListener('input', recalc));
+document.querySelectorAll('.all').forEach(b => b.addEventListener('click', () => {
+  const input = b.closest('tr').querySelector('.ret-qty');
+  input.value = App.qty(input.dataset.max);
+  recalc();
+}));
+</script>
+{% endblock %}

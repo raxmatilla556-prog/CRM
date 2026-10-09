@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{% t "Smena" %}{% endblock %}
+{% block content %}
+<h1 class="page-title mb-3">{% t "Smena" %}</h1>
+{% if not shift %}
+  <div class="card" style="max-width:480px">
+    <div class="card-header"><i class="bi bi-unlock"></i> {% t "Smenani ochish" %}</div>
+    <div class="card-body">
+      <p class="text-muted small">{% t "Kassadagi naqd pulni sanab, summani kiriting (qaytim uchun qoldirilgan pul)." %}</p>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="open">
+        <label class="form-label">{% t "Boshlang'ich naqd" %}</label>
+        <input name="opening_cash" class="form-control form-control-lg mb-3" inputmode="numeric" value="{{ last.actual_cash|default_if_none:0|floatformat:0 }}" autofocus>
+        <button class="btn btn-primary btn-lg w-100"><i class="bi bi-unlock"></i> {% t "Smenani ochish" %}</button>
+      </form>
+    </div>
+  </div>
+  {% if last %}
+    <p class="text-muted small mt-3">{% t "Oxirgi smena" %}: <a href="{% url 'sales:shift_detail' last.pk %}">{{ last.closed_at|date:"d.m.Y H:i" }}</a></p>
+  {% endif %}
+{% else %}
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between"><span><i class="bi bi-clock"></i> {% t "Ochiq smena" %}</span><span class="text-muted">{{ shift.opened_at|date:"d.m.Y H:i" }}</span></div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between"><span>{% t "Boshlang'ich naqd" %}</span><b>{{ shift.opening_cash|money }}</b></li>
+          <li class="list-group-item d-flex justify-content-between"><span>{% t "Sotuvlar" %} ({{ totals.sales_count }})</span><b>{{ totals.sales_total|money }}</b></li>
+          <li class="list-group-item d-flex justify-content-between"><span>+ {% t "Naqd" %} ({% t "Sotuv" %})</span><b class="text-success">{{ totals.sales_cash|money }}</b></li>
+          <li class="list-group-item d-flex justify-content-between"><span>+ {% t "Qarz to'lovi" %}</span><b class="text-success">{{ totals.debt_payments|money }}</b></li>
+          <li class="list-group-item d-flex justify-content-between"><span>− {% t "Vozvrat" %} ({% t "Naqd" %})</span><b class="text-danger">{{ totals.cash_refunds|money }}</b></li>
+          <li class="list-group-item d-flex justify-content-between"><span class="text-muted">{% t "Qarzga" %}</span><span class="text-muted">{{ totals.sales_debt|money }}</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-lock"></i> {% t "Smenani yopish" %}</div>
+        <div class="card-body">
+          <p class="text-muted small">{% t "Kassadagi naqd pulni sanang va haqiqiy summani kiriting. Tizim kutilgan summa bilan solishtiradi." %}</p>
+          <form method="post">{% csrf_token %}
+            <input type="hidden" name="action" value="close">
+            <label class="form-label">{% t "Haqiqiy naqd" %}</label>
+            <input name="actual_cash" class="form-control form-control-lg mb-2" inputmode="numeric" required>
+            <label class="form-label">{% t "Izoh" %}</label>
+            <input name="note" class="form-control mb-3" maxlength="255">
+            <button class="btn btn-danger btn-lg w-100"><i class="bi bi-lock"></i> {% t "Smenani yopish" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

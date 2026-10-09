@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% t "Hisobotlar" %}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="page-title">{% t "Hisobotlar" %}</h1>
+    <div class="text-muted small">{{ date_from|date:"d.m.Y" }}{% if date_from != date_to %} — {{ date_to|date:"d.m.Y" }}{% endif %}</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="btn-group">
+      <a href="?period=today" class="btn btn-sm {% if period == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">{% t "Bugun" %}</a>
+      <a href="?period=week" class="btn btn-sm {% if period == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">{% t "Hafta" %}</a>
+      <a href="?period=month" class="btn btn-sm {% if period == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">{% t "Oy" %}</a>
+      <a href="?period=year" class="btn btn-sm {% if period == 'year' %}btn-primary{% else %}btn-outline-primary{% endif %}">{% t "Yil" %}</a>
+    </div>
+    <form class="d-flex gap-1">
+      <input type="hidden" name="period" value="custom">
+      <input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" class="form-control form-control-sm">
+      <input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}" class="form-control form-control-sm">
+      <button class="btn btn-sm btn-secondary"><i class="bi bi-funnel"></i></button>
+    </form>
+    {% if telegram_ok and not telegram_linked %}
+      <a href="{% url 'telegram_link' %}" target="_blank" rel="noopener" class="btn btn-sm btn-primary"><i class="bi bi-telegram"></i> {% t "Telegramni ulash" %}</a>
+    {% elif telegram_linked %}
+    <div class="btn-group">
+      <form method="post" action="{% url 'reports:send_report' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-outline-primary rounded-end-0"><i class="bi bi-telegram"></i> {% t "Telegramga hisobot yuborish" %}</button>
+      </form>
+      <form method="post" action="{% url 'telegram_unlink' %}">{% csrf_token %}
+        <button class="btn btn-sm btn-outline-secondary rounded-start-0" title="{% t "Telegramni uzish" %}"><i class="bi bi-x-lg"></i></button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="card stat h-100"><div class="d-flex justify-content-between">
+    <div><div class="label">{% t "Daromad" %}</div><div class="value">{{ s.revenue|money }}</div>
+      {% if s.returned %}<div class="small text-warning">↩ {% t "Vozvrat" %}: −{{ s.returned|money }}</div>{% endif %}</div>
+    <div class="icon bg-primary-subtle text-primary"><i class="bi bi-cash-stack"></i></div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card stat h-100"><div class="d-flex justify-content-between">
+    <div><div class="label">{% t "Sof foyda" %}</div><div class="value text-success">{{ s.profit|money }}</div></div>
+    <div class="icon bg-success-subtle text-success"><i class="bi bi-graph-up-arrow"></i></div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card stat h-100"><div class="d-flex justify-content-between">
+    <div><div class="label">{% t "Sotuvlar soni" %}</div><div class="value">{{ s.count }}</div>
+      <div class="small text-muted">{% t "O'rtacha chek" %}: {{ s.avg_check|money }}</div></div>
+    <div class="icon bg-info-subtle text-info"><i class="bi bi-receipt"></i></div></div></div></div>
+  <div class="col-6 col-xl-3"><div class="card stat h-100"><div class="d-flex justify-content-between">
+    <div><div class="label">{% t "Umumiy qarz" %}</div><div class="value text-danger">{{ outstanding_debt|money }}</div>
+      <div class="small text-muted">+{{ s.debt_given|money }} / −{{ s.debt_paid|money }}</div></div>
+    <div class="icon bg-danger-subtle text-danger"><i class="bi bi-journal-text"></i></div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-8">
+    <div class="card h-100"><div class="card-header">{% t "Kunlik daromad" %}</div>
+      <div class="card-body"><canvas id="chart" height="110"></canvas></div></div>
+  </div>
+  <div class="col-xl-4 d-flex flex-column gap-3">
+    <div class="card stat"><div class="label">{% t "Ombordagi tovar qiymati" %} ({% t "Tannarx" %})</div><div class="value">{{ stock_value|money }} <small class="fs-6">{% t "so'm" %}</small></div></div>
+    <div class="card stat"><div class="label">{% t "Naqd" %} ({% t "Kassa" %})</div><div class="value">{{ s.cash_in|money }}</div>
+      <div class="small text-muted">{% t "Sotuv" %}: {{ s.cash|money }} + {% t "Qarz to'lovi" %}: {{ s.debt_paid|money }}{% if s.cash_refund %} − {% t "Vozvrat" %}: {{ s.cash_refund|money }}{% endif %}</div></div>
+    <a href="{% url 'inventory:alerts' %}" class="card stat text-decoration-none">
+      <div class="label">{% t "Ogohlantirishlar" %}</div>
+      <div class="d-flex gap-3 mt-1">
+        <span class="badge text-bg-warning fs-6"><i class="bi bi-exclamation-triangle"></i> {{ low_count }} {% t "Kam qolgan" %}</span>
+        <span class="badge text-bg-danger fs-6"><i class="bi bi-hourglass-split"></i> {{ expiring_count }}</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header"><i class="bi bi-trophy text-warning"></i> {% t "Eng ko'p sotilgan tovarlar" %}</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Sotilgan" %}</th><th class="num">{% t "Daromad" %}</th><th class="num">{% t "Foyda" %}</th></tr></thead>
+        <tbody>{% for t in top %}
+          <tr><td>{{ t.product__name }}</td><td class="num">{{ t.sold_qty|qty }} {{ t.product__unit }}</td><td class="num">{{ t.revenue|money }}</td><td class="num text-success">{{ t.profit|money }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">{% t "Hech narsa topilmadi" %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-header"><i class="bi bi-hourglass text-secondary"></i> {% t "Kam sotilayotgan tovarlar" %}</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>{% t "Nomi" %}</th><th class="num">{% t "Sotilgan" %}</th><th class="num">{% t "Qoldiq" %}</th><th class="num">{% t "Summa" %}</th></tr></thead>
+        <tbody>{% for p in slow %}
+          <tr><td>{{ p.name }}</td><td class="num">{{ p.sold_qty|qty }}</td><td class="num">{{ p.total_qty|qty }} {{ p.unit }}</td><td class="num">{{ p.stock_value|money }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">{% t "Hech narsa topilmadi" %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-people"></i> {% t "Sotuvchilar samaradorligi" %}</div>
+  <div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>{% t "Sotuvchi" %}</th><th class="num">{% t "Sotuvlar soni" %}</th><th class="num">{% t "Daromad" %}</th><th class="num">{% t "Foyda" %}</th><th class="num">{% t "Qarzga" %}</th><th style="width:30%"></th></tr></thead>
+    <tbody>{% for r in sellers %}
+      <tr><td class="fw-semibold">{% if r.seller__first_name %}{{ r.seller__first_name }} {{ r.seller__last_name }}{% else %}{{ r.seller__username|default:"—" }}{% endif %}</td>
+        <td class="num">{{ r.count }}</td><td class="num">{{ r.revenue|money }}</td><td class="num text-success">{{ r.profit|money }}</td>
+        <td class="num text-danger">{{ r.debt|money }}</td>
+        <td><div class="progress" style="height:8px"><div class="progress-bar bg-success" style="width:{% widthratio r.revenue s.revenue 100 %}%"></div></div></td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-muted py-3">{% t "Hech narsa topilmadi" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{{ series|json_script:"series-data" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script>
+const series = JSON.parse(document.getElementById('series-data').textContent);
+new Chart(document.getElementById('chart'), {
+  type: 'bar',
+  data: {
+    labels: series.map(r => r.day),
+    datasets: [
+      {label: '{% t "Daromad" %}', data: series.map(r => r.revenue), backgroundColor: '#0f766e', borderRadius: 4},
+      {label: '{% t "Sof foyda" %}', data: series.map(r => r.profit), type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: .3},
+    ],
+  },
+  options: {
+    responsive: true,
+    interaction: {mode: 'index', intersect: false},
+    plugins: {tooltip: {callbacks: {label: c => `${c.dataset.label}: ${App.money(c.raw)}`}}},
+    scales: {y: {beginAtZero: true, ticks: {callback: v => App.money(v)}}},
+  },
+});
+</script>
+{% endblock %}
