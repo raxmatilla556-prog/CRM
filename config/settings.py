@@ -41,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.LanguageMiddleware',
     'core.middleware.ForcePasswordChangeMiddleware',
+    'core.middleware.NoIndexMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -135,6 +136,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SHOP_NAME = os.environ.get('SHOP_NAME', "Do'kon")
 SHOP_ADDRESS = os.environ.get('SHOP_ADDRESS', '')
 SHOP_PHONE = os.environ.get('SHOP_PHONE', '')
+# Ommaviy bosh sahifa va Google uchun
+SHOP_DESCRIPTION = os.environ.get('SHOP_DESCRIPTION', '')
+SHOP_HOURS = os.environ.get('SHOP_HOURS', '')  # masalan: Har kuni 08:00-22:00
+SHOP_CITY = os.environ.get('SHOP_CITY', '')
+GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
 EXPIRY_WARNING_DAYS = int(os.environ.get('EXPIRY_WARNING_DAYS', '30'))
 
 # Avtomatik vazifalar vaqti (telegram_bot ishlab turganda bajariladi)

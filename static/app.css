@@ -60,3 +60,7 @@ body { background: var(--page-bg); font-size: .95rem; }
 /* Login */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #0f172a, #0f766e); padding: 1rem; }
 .login-card { width: 100%; max-width: 380px; }
+
+/* Ommaviy bosh sahifa */
+.landing-hero { background: linear-gradient(135deg, #0f172a, #0f766e); color: #fff; }
+.landing-hero .lead { color: #cbd5e1; }

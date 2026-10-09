@@ -1,0 +1,78 @@
+{% load static %}<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ shop_name }}{% if shop_city %} — {{ shop_city }}{% endif %}</title>
+  <meta name="description" content="{% if shop_description %}{{ shop_description }}{% else %}{{ shop_name }}{% if shop_address %}, {{ shop_address }}{% endif %}{% if shop_phone %}. {% t "Telefon" %}: {{ shop_phone }}{% endif %}{% endif %}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ request.build_absolute_uri }}">
+  {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ shop_name }}">
+  <meta property="og:description" content="{{ shop_description|default:shop_address }}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'app.css' %}" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "name": "{{ shop_name|escapejs }}",
+    "url": "{{ request.build_absolute_uri|escapejs }}"{% if shop_description %},
+    "description": "{{ shop_description|escapejs }}"{% endif %}{% if shop_phone %},
+    "telephone": "{{ shop_phone|escapejs }}"{% endif %}{% if shop_address %},
+    "address": {"@type": "PostalAddress", "streetAddress": "{{ shop_address|escapejs }}"{% if shop_city %}, "addressLocality": "{{ shop_city|escapejs }}"{% endif %}, "addressCountry": "UZ"}{% endif %}{% if shop_hours %},
+    "openingHours": "{{ shop_hours|escapejs }}"{% endif %}
+  }
+  </script>
+</head>
+<body class="landing">
+  <header class="landing-hero">
+    <div class="container py-5">
+      <div class="d-flex justify-content-between align-items-center mb-5">
+        <span class="fw-bold fs-5"><i class="bi bi-shop"></i> {{ shop_name }}</span>
+        <div class="d-flex gap-2 align-items-center">
+          <form method="post" action="{% url 'set_language' %}" class="d-flex gap-1">{% csrf_token %}
+            <input type="hidden" name="next" value="/">
+            <button name="lang" value="uz" class="btn btn-sm {% if lang == 'uz' %}btn-light{% else %}btn-outline-light{% endif %}">UZ</button>
+            <button name="lang" value="ru" class="btn btn-sm {% if lang == 'ru' %}btn-light{% else %}btn-outline-light{% endif %}">RU</button>
+          </form>
+          <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light" rel="nofollow"><i class="bi bi-person-lock"></i> {% t "Xodimlar uchun" %}</a>
+        </div>
+      </div>
+      <h1 class="display-5 fw-bold mb-3">{{ shop_name }}</h1>
+      {% if shop_description %}<p class="lead mb-4" style="max-width:640px">{{ shop_description }}</p>{% endif %}
+      {% if shop_phone %}<a href="tel:{{ shop_phone|cut:' ' }}" class="btn btn-light btn-lg"><i class="bi bi-telephone"></i> {{ shop_phone }}</a>{% endif %}
+    </div>
+  </header>
+  <main class="container py-5">
+    <div class="row g-3">
+      {% if shop_address %}
+      <div class="col-md-4"><div class="card h-100 p-4">
+        <div class="text-brand fs-3 mb-2"><i class="bi bi-geo-alt"></i></div>
+        <div class="text-muted small">{% t "Manzil" %}</div>
+        <div class="fw-semibold">{{ shop_address }}{% if shop_city %}, {{ shop_city }}{% endif %}</div>
+        <a class="small mt-2" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query={{ shop_name|urlencode }}%20{{ shop_address|urlencode }}">{% t "Xaritada ko'rish" %}</a>
+      </div></div>
+      {% endif %}
+      {% if shop_hours %}
+      <div class="col-md-4"><div class="card h-100 p-4">
+        <div class="text-brand fs-3 mb-2"><i class="bi bi-clock"></i></div>
+        <div class="text-muted small">{% t "Ish vaqti" %}</div>
+        <div class="fw-semibold">{{ shop_hours }}</div>
+      </div></div>
+      {% endif %}
+      {% if shop_phone %}
+      <div class="col-md-4"><div class="card h-100 p-4">
+        <div class="text-brand fs-3 mb-2"><i class="bi bi-telephone"></i></div>
+        <div class="text-muted small">{% t "Telefon" %}</div>
+        <a class="fw-semibold text-decoration-none" href="tel:{{ shop_phone|cut:' ' }}">{{ shop_phone }}</a>
+      </div></div>
+      {% endif %}
+    </div>
+  </main>
+  <footer class="container pb-4 text-muted small">© {% now "Y" %} {{ shop_name }}</footer>
+</body>
+</html>

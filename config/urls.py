@@ -5,6 +5,8 @@ from core import views as core
 
 urlpatterns = [
     path('', core.home, name='home'),
+    path('robots.txt', core.robots_txt),
+    path('sitemap.xml', core.sitemap_xml),
     path('login/', core.login_view, name='login'),
     path('logout/', core.logout_view, name='logout'),
     path('lang/', core.set_language, name='set_language'),

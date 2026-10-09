@@ -237,6 +237,10 @@ RU = {
     "Tarixi bor tovarni o'chirib bo'lmaydi. Uni nofaol qiling.": 'Нельзя удалить товар с историей. Сделайте его неактивным.',
     "Tovarni o'chirasizmi?": 'Удалить товар?',
     "O'chirasizmi?": 'Удалить?',
+    'Xodimlar uchun': 'Для сотрудников',
+    'Manzil': 'Адрес',
+    "Xaritada ko'rish": 'Показать на карте',
+    'Ish vaqti': 'Время работы',
 }
 
 DICTS = {'ru': RU}

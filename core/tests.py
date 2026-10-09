@@ -219,3 +219,30 @@ class PagesRenderTests(BaseTest):
             for url in urls:
                 with self.subTest(url=url, lang=lang):
                     self.assertIn(self.client.get(url).status_code, (200, 404))
+
+
+@override_settings(SHOP_NAME='Baraka Market', SHOP_ADDRESS='Navoiy ko‘chasi 5', SHOP_PHONE='+998 90 123 45 67',
+                   GOOGLE_SITE_VERIFICATION='abc123')
+class SeoTests(BaseTest):
+    def test_public_landing_is_indexable(self):
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn('X-Robots-Tag', r)
+        html = r.content.decode()
+        self.assertIn('Baraka Market', html)
+        self.assertIn('"@type": "Store"', html)
+        self.assertIn('google-site-verification" content="abc123"', html)
+
+    def test_internal_pages_are_noindex(self):
+        self.assertEqual(self.client.get(reverse('login'))['X-Robots-Tag'], 'noindex, nofollow')
+        self.client.force_login(self.owner)
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 302)  # xodim o'z bo'limiga o'tadi
+        self.assertEqual(r['X-Robots-Tag'], 'noindex, nofollow')
+
+    def test_robots_and_sitemap(self):
+        robots = self.client.get('/robots.txt').content.decode()
+        self.assertIn('Allow: /$', robots)
+        self.assertIn('Disallow: /', robots)
+        self.assertIn('/sitemap.xml', robots)
+        self.assertIn('<loc>http://testserver/</loc>', self.client.get('/sitemap.xml').content.decode())

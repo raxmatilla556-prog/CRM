@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.cache import cache
 from django.core.paginator import Paginator
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -74,8 +74,9 @@ def logout_view(request):
     return redirect('login')
 
 
-@login_required
 def home(request):
+    if not request.user.is_authenticated:
+        return render(request, 'core/landing.html')
     user = request.user
     if user.is_owner:
         return redirect('reports:dashboard')
@@ -170,3 +171,23 @@ def action_log(request):
     return render(request, 'core/action_log.html', {
         'page': page, 'users': User.objects.all(), 'selected_user': user_id,
     })
+
+
+def robots_txt(request):
+    lines = [
+        'User-agent: *',
+        'Allow: /$',
+        'Disallow: /',
+        '',
+        f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}",
+    ]
+    return HttpResponse('\n'.join(lines) + '\n', content_type='text/plain')
+
+
+def sitemap_xml(request):
+    url = request.build_absolute_uri('/')
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           f'  <url><loc>{url}</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>\n'
+           '</urlset>\n')
+    return HttpResponse(xml, content_type='application/xml')

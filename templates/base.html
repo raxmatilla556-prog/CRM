@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% t "Do'kon CRM" %}{% endblock %} · {{ shop_name }}</title>
+  {% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
   <link href="{% static 'app.css' %}" rel="stylesheet">

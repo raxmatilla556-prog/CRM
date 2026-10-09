@@ -40,3 +40,21 @@ class ForcePasswordChangeMiddleware:
             if request.path not in allowed_paths and not request.path.startswith('/static/'):
                 return redirect('password_change')
         return self.get_response(request)
+
+
+class NoIndexMiddleware:
+    """Ichki sahifalar (kassa, hisobot, qarz daftari, kirish) Google qidiruviga tushmasin.
+
+    Faqat ommaviy bosh sahifa, robots.txt va sitemap.xml indekslanadi.
+    """
+
+    public_paths = ('/', '/robots.txt', '/sitemap.xml')
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.path not in self.public_paths or request.user.is_authenticated:
+            response['X-Robots-Tag'] = 'noindex, nofollow'
+        return response
