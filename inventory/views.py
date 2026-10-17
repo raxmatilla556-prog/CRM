@@ -250,7 +250,7 @@ def count_create(request):
             count = StockCount.objects.create(location=location, created_by=request.user,
                                               note=request.POST.get('note', '')[:255])
             n = 0
-            for product in products.select_for_update():
+            for product in products.select_for_update(of=('self',)):
                 actual = _decimal(request.POST.get(f'actual_{product.pk}', ''))
                 if actual is None or actual < 0:
                     continue
