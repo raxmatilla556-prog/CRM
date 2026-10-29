@@ -4,7 +4,7 @@ Uch rolli do'kon boshqaruv tizimi (Django).
 
 | Rol | Imkoniyatlar |
 |---|---|
-| **Sotuvchi** | Kassa (tovar nomi bo'yicha qidiruv), naqd sotuv, qarzga sotish, chek chop etish, qarz daftari, qarz to'lovini qabul qilish, eslatma yuborish |
+| **Sotuvchi** | Kassa (tovar nomi yoki shtrix-kodi bo'yicha qidiruv), naqd sotuv, qarzga sotish, chek chop etish, qarz daftari, qarz to'lovini qabul qilish, eslatma yuborish |
 | **Omborchi** | Tovarlar, kirim (yetkazib beruvchidan), ombor ↔ do'kon ko'chirish, inventarizatsiya, kam qolgan / muddati yaqin tovarlar |
 | **Ega** | Hammasi + daromad, sof foyda, top tovarlar, kam sotilayotganlar, sotuvchilar samaradorligi, xodimlar, harakatlar tarixi, Telegram hisobot |
 
@@ -25,6 +25,20 @@ Ega xodimga bergan parol ham vaqtinchalik: xodim birinchi kirishda o'zinikiga al
 
 `.env` da `DEBUG=0` bo'lishi kerak (xatoliklarda ichki ma'lumot ko'rsatilmaydi). Loglar: `logs/app.log`, `logs/bot.log`.
 Sayt internetsiz ishlaydi: Bootstrap, ikonkalar va grafiklar `static/vendor` ichida.
+
+## Shtrix-kod bilan qidirish
+
+Yangilashdan keyin `python manage.py migrate` buyrug'ini bajaring.
+Ega yoki omborchi **Tovarlar → Tahrirlash / Yangi tovar → Shtrix-kod** maydoniga kodni
+yozadi yoki shu maydonni tanlab USB skaner bilan kiritadi, keyin **Saqlash**ni bosadi.
+Kod ixtiyoriy; bir kod faqat bitta tovarga tegishli. Boshidagi nollar saqlanadi.
+Avvalgi tovarlar kodsiz qoladi — ularga kodlarni shu forma orqali biriktirish kerak.
+
+Sotuvchi kassadagi **Tovar nomi yoki shtrix-kod** qidiruv maydonini tanlab skanerlaydi.
+Skaner klaviatura (USB HID) rejimida, kod oxirida **Enter** yuboradigan qilib sozlanadi.
+Aniq kod topilsa tovar savatga qo'shiladi; takroriy skan miqdorni bittaga oshiradi.
+Nom bilan qidiruv ham ishlaydi. Qidiruv tugamaguncha sotishni tasdiqlash bloklanadi.
+Kod bo'yicha qidirishni skanersiz ham kodni yozib **Enter** bosib tekshirish mumkin.
 
 ## Kassa smenasi
 

@@ -7,11 +7,22 @@ from inventory.models import Category, Location, Product, Supplier
 class ProductForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'category', 'unit', 'cost_price', 'sale_price', 'min_qty', 'is_active']
+        fields = ['name', 'barcode', 'category', 'unit', 'cost_price', 'sale_price', 'min_qty', 'is_active']
         labels = {
-            'name': 'Nomi', 'category': 'Kategoriya', 'unit': "O'lchov birligi",
+            'name': 'Nomi', 'barcode': 'Shtrix-kod', 'category': 'Kategoriya', 'unit': "O'lchov birligi",
             'cost_price': 'Tannarx', 'sale_price': 'Sotuv narxi', 'min_qty': 'Minimal qoldiq', 'is_active': 'Faol',
         }
+        widgets = {
+            'barcode': forms.TextInput(attrs={
+                'autocomplete': 'off', 'spellcheck': 'false', 'data-barcode-input': '1',
+            }),
+        }
+        help_texts = {'barcode': 'Ixtiyoriy. Maydonni tanlab skanerlang yoki kodni yozing.'}
+        error_messages = {'barcode': {'unique': 'Bu shtrix-kod boshqa tovarga biriktirilgan.'}}
+
+    def clean_barcode(self):
+        # Bo'sh kodlar NULL: bir nechta kodsiz tovarni saqlash mumkin.
+        return (self.cleaned_data.get('barcode') or '').strip() or None
 
 
 class CategoryForm(StyledFormMixin, forms.ModelForm):

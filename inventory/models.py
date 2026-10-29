@@ -41,6 +41,7 @@ class Product(models.Model):
         METER = 'metr', 'metr'
 
     name = models.CharField(max_length=200)
+    barcode = models.CharField('Shtrix-kod', max_length=64, unique=True, blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     unit = models.CharField(max_length=10, choices=Unit.choices, default=Unit.PIECE)
     cost_price = models.DecimalField('Tannarx', max_digits=14, decimal_places=2, default=0)

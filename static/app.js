@@ -24,9 +24,15 @@ const App = {
   },
   async getJSON(url) {
     const r = await fetch(url, {headers: {'X-Requested-With': 'fetch'}});
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   },
 };
+
+// Skanerning Enter tugmasi tovar formasini tasodifan saqlamasin.
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('[data-barcode-input]')) e.preventDefault();
+});
 
 // <form data-confirm="Matn"> - birinchi bosishda tugma "tasdiqlang" holatiga o'tadi, ikkinchisida yuboradi
 document.addEventListener('submit', e => {
@@ -49,18 +55,20 @@ document.addEventListener('submit', e => {
 });
 
 /**
- * Tovar tanlash maydoni (nomi bo'yicha qidiruv).
+ * Tovar tanlash maydoni (nom yoki shtrix-kod bo'yicha qidiruv).
  * <div class="picker" data-picker>
  *   <input class="form-control" data-picker-input> <input type="hidden" name="product">
  * </div>
  */
 class ProductPicker {
-  constructor(root, {url, onSelect, renderMeta} = {}) {
+  constructor(root, {url, onSelect, onSubmit, onError, renderMeta} = {}) {
     this.root = root;
     this.url = url || root.dataset.url;
     this.input = root.querySelector('[data-picker-input]');
     this.hidden = root.querySelector('input[type=hidden]');
     this.onSelect = onSelect;
+    this.onSubmit = onSubmit;
+    this.onError = onError;
     this.renderMeta = renderMeta || (() => '');
     this.menu = document.createElement('div');
     this.menu.className = 'list-group picker-menu shadow d-none';
@@ -70,6 +78,9 @@ class ProductPicker {
 
     this.input.addEventListener('input', () => {
       clearTimeout(this.timer);
+      this.seq = (this.seq || 0) + 1;
+      this.items = [];
+      this.close();
       this.timer = setTimeout(() => this.search(), 200);
     });
     this.input.addEventListener('keydown', e => this.keydown(e));
@@ -84,7 +95,17 @@ class ProductPicker {
     if (!q) { this.close(); return; }
     // Har bir so'rovga raqam beramiz: kechikib kelgan eski javob yangisining ustiga yozilmaydi
     const seq = this.seq = (this.seq || 0) + 1;
-    const data = await App.getJSON(`${this.url}?q=${encodeURIComponent(q)}`);
+    let data;
+    try {
+      data = await App.getJSON(`${this.url}?q=${encodeURIComponent(q)}`);
+      if (!Array.isArray(data.results)) throw new Error('Invalid picker response');
+    } catch (error) {
+      if (seq !== this.seq) return;
+      this.items = [];
+      this.close();
+      if (this.onError) this.onError(error);
+      return;
+    }
     if (seq !== this.seq) return;
     this.items = data.results;
     this.query = q;
@@ -123,6 +144,7 @@ class ProductPicker {
       const menuOpen = !this.menu.classList.contains('d-none');
       const fresh = this.query === this.input.value.trim();
       if (menuOpen && fresh && this.items[this.index]) this.select(this.items[this.index]);
+      else if (this.onSubmit && this.input.value.trim()) this.onSubmit(this.input.value.trim(), this);
       else this.search(true);
     } else if (e.key === 'Escape') {
       this.close();
@@ -141,9 +163,13 @@ class ProductPicker {
   close() { this.menu.classList.add('d-none'); }
 
   clear() {
+    clearTimeout(this.timer);
+    this.seq = (this.seq || 0) + 1;
     this.input.value = '';
     if (this.hidden) this.hidden.value = '';
     this.items = [];
+    this.query = '';
+    this.index = -1;
     this.close();
   }
 }

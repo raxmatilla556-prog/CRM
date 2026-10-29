@@ -97,6 +97,15 @@ RU = {
     'Kunlar qoldi': 'Осталось дней',
     'Muddati o\'tgan': 'Просрочен',
     # Kassa / sotuv
+    'Shtrix-kod': 'Штрихкод',
+    'Ixtiyoriy. Maydonni tanlab skanerlang yoki kodni yozing.':
+        'Необязательно. Выберите поле и отсканируйте или введите код.',
+    'Bu shtrix-kod boshqa tovarga biriktirilgan.': 'Этот штрихкод уже назначен другому товару.',
+    'Tovar nomi yoki shtrix-kod': 'Название товара или штрихкод',
+    "Qidiruv maydonini tanlab skanerlang. Enter tovarni savatga qo'shadi.":
+        'Выберите поле поиска и сканируйте. Enter добавляет товар в корзину.',
+    'Tovar qidirilmoqda...': 'Поиск товара...',
+    'Qidiruv bajarilmadi. Qayta skanerlang.': 'Не удалось выполнить поиск. Отсканируйте ещё раз.',
     'Tovar nomini yozing': 'Введите название товара',
     'Savat': 'Корзина',
     "Savat bo'sh": 'Корзина пуста',

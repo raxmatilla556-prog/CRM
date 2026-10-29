@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -35,7 +36,7 @@ def stock(request):
     products = Product.objects.select_related('category')
     q = request.GET.get('q', '').strip()
     if q:
-        products = products.filter(name__icontains=q)
+        products = products.filter(Q(name__icontains=q) | Q(barcode=q))
     category = request.GET.get('category')
     if category:
         products = products.filter(category_id=category)
@@ -92,18 +93,23 @@ def product_delete(request, pk):
 
 @role_required('warehouse', 'seller')
 def product_api(request):
-    """Kassa va kirim sahifalari uchun tovar qidirish."""
+    """Avval aniq shtrix-kod, keyin nom bo'yicha qidirish."""
     q = request.GET.get('q', '').strip()
     products = Product.objects.filter(is_active=True)
     if q:
-        # Nomi qidiruvdagi so'z bilan boshlanadiganlar birinchi chiqadi
-        products = sorted(products.filter(name__icontains=q)[:50],
-                          key=lambda p: (not p.name.lower().startswith(q.lower()), p.name.lower()))[:20]
+        exact = products.filter(barcode=q).first()
+        if exact:
+            # Kod noyob: nomi ham qidiruvga mos kelgan boshqa tovarni sotmaymiz.
+            products = [exact]
+        else:
+            # Nomi qidiruvdagi so'z bilan boshlanadiganlar birinchi chiqadi.
+            products = sorted(products.filter(name__icontains=q)[:50],
+                              key=lambda p: (not p.name.lower().startswith(q.lower()), p.name.lower()))[:20]
     else:
         products = products[:20]
     show_cost = request.user.is_owner or request.user.is_warehouse
     return JsonResponse({'results': [{
-        'id': p.id, 'name': p.name, 'unit': p.unit,
+        'id': p.id, 'name': p.name, 'barcode': p.barcode or '', 'unit': p.unit,
         'sale_price': str(p.sale_price), 'cost_price': str(p.cost_price) if show_cost else None,
         'store_qty': str(p.store_qty), 'warehouse_qty': str(p.warehouse_qty),
     } for p in products]})

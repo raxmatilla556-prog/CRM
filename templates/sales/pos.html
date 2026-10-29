@@ -10,10 +10,12 @@
           <div class="input-group input-group-lg">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
             <input class="form-control" data-picker-input autocomplete="off" autofocus
-                   placeholder="{% t 'Tovar nomini yozing' %}">
+                   placeholder="{% t 'Tovar nomi yoki shtrix-kod' %}">
           </div>
         </div>
-        <div id="pos-error" class="text-danger small mt-2"></div>
+        <div class="form-text">{% t "Qidiruv maydonini tanlab skanerlang. Enter tovarni savatga qo'shadi." %}</div>
+        <div id="scan-status" class="text-muted small d-none" role="status">{% t "Tovar qidirilmoqda..." %}</div>
+        <div id="pos-error" class="text-danger small mt-2" role="alert"></div>
         {% if shift %}<div class="small text-muted mt-1"><i class="bi bi-clock"></i> {% t "Ochiq smena" %}: {{ shift.opened_at|date:"d.m H:i" }} · <a href="{% url 'sales:shift' %}">{% t "Smenani yopish" %}</a></div>{% endif %}
       </div>
     </div>
@@ -81,18 +83,61 @@ const cart = new Map(); // id -> {product, qty}
 const $ = id => document.getElementById(id);
 const err = msg => { $('pos-error').textContent = msg || ''; };
 let cashTouched = false;
+let pendingSearches = 0;
+let productSearchQueue = Promise.resolve();
+let selling = false;
 
 const productPicker = new ProductPicker($('pos-picker'), {
   url: "{% url 'inventory:product_api' %}",
   renderMeta: p => `{% t "Do'konda" %}: ${App.qty(p.store_qty)} ${App.escape(p.unit)}`,
   onSelect: (p, picker) => { addToCart(p); picker.clear(); picker.input.focus(); },
+  onSubmit: queueProductSearch,
+  onError: () => err('{% t "Qidiruv bajarilmadi. Qayta skanerlang." %}'),
 });
 
-function addToCart(p) {
-  err();
+function queueProductSearch(q, picker) {
+  if (selling) return;
+  // Enter kelishi bilan maydonni bo'shatamiz: keyingi skan so'rovni kutmaydi.
+  picker.clear();
+  const seq = picker.seq;
+  if (!pendingSearches) err();
+  pendingSearches += 1;
+  recalc();
+  productSearchQueue = productSearchQueue.then(async () => {
+    try {
+      const data = await App.getJSON(`${picker.url}?q=${encodeURIComponent(q)}`);
+      if (!Array.isArray(data.results)) throw new Error('Invalid product response');
+      if (data.results.length === 1) {
+        // Keyingi skan yoki yozilayotgan nomni tozalamasdan savatga qo'shamiz.
+        addToCart(data.results[0], false);
+      } else {
+        if (!data.results.length) err(`{% t "Tovar topilmadi" %}: ${q}`);
+        if (seq === picker.seq && !picker.input.value) {
+          picker.input.value = q;
+          picker.query = q;
+          picker.items = data.results;
+          picker.index = data.results.length ? 0 : -1;
+          picker.render();
+          picker.input.select();
+        }
+      }
+    } catch (e) {
+      err(`{% t "Qidiruv bajarilmadi. Qayta skanerlang." %} (${q})`);
+    } finally {
+      pendingSearches -= 1;
+      recalc();
+    }
+  });
+}
+
+function addToCart(p, clearError = true) {
+  if (clearError) err();
   if (App.num(p.store_qty) <= 0) { err(`${p.name}: {% t "Yetarli tovar yo'q" %}`); return; }
   const line = cart.get(p.id);
-  if (line) line.qty = Math.min(line.qty + 1, App.num(p.store_qty));
+  if (line && line.qty + 1 > App.num(p.store_qty)) {
+    err(`${p.name}: {% t "Yetarli tovar yo'q" %} (${App.qty(p.store_qty)})`); return;
+  }
+  if (line) line.qty += 1;
   else cart.set(p.id, {product: p, qty: 1, price: App.num(p.sale_price)});
   render();
 }
@@ -154,7 +199,9 @@ function recalc() {
   $('change-row').classList.toggle('d-none', debt > 0);
   $('debt-row').classList.toggle('d-none', debt <= 0);
   $('customer-box').classList.toggle('d-none', debt <= 0);
-  $('sell').disabled = cart.size === 0;
+  $('sell').disabled = cart.size === 0 || pendingSearches > 0 || selling;
+  $('clear-cart').disabled = pendingSearches > 0 || selling;
+  $('scan-status').classList.toggle('d-none', pendingSearches === 0);
 }
 
 $('discount').addEventListener('input', recalc);
@@ -196,17 +243,22 @@ async function sell() {
     payload.due_date = $('due-date').value;
     if (!payload.customer_id && !payload.new_customer.name.trim()) { err('{% t "Klient tanlang" %}'); return; }
   }
-  $('sell').disabled = true;
+  selling = true;
+  productPicker.input.disabled = true;
+  productPicker.close();
+  recalc();
   try {
     const r = await fetch("{% url 'sales:checkout' %}", {
       method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': App.csrf()},
       body: JSON.stringify(payload),
     });
     const data = await r.json();
-    if (!data.ok) { err(data.error); $('sell').disabled = false; return; }
+    if (!data.ok) {
+      err(data.error); selling = false; productPicker.input.disabled = false; recalc(); return;
+    }
     location.href = "{% url 'sales:receipt' 0 %}".replace('/0/', `/${data.sale_id}/`) + '?print=1';
   } catch (e) {
-    err(String(e)); $('sell').disabled = false;
+    err(String(e)); selling = false; productPicker.input.disabled = false; recalc();
   }
 }
 $('sell').addEventListener('click', sell);

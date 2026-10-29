@@ -12,7 +12,7 @@
 </div>
 <form class="card card-body mb-3">
   <div class="row g-2 align-items-center">
-    <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="{% t 'Tovar nomini yozing' %}" autofocus></div>
+    <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="{% t 'Tovar nomi yoki shtrix-kod' %}" autofocus></div>
     <div class="col-md-3">
       <select name="category" class="form-select"><option value="">{% t "Kategoriya" %}: {% t "Hammasi" %}</option>
         {% for c in categories %}<option value="{{ c.pk }}" {% if request.GET.category == c.pk|stringformat:'s' %}selected{% endif %}>{{ c }}</option>{% endfor %}
@@ -35,7 +35,8 @@
   <tbody>
   {% for p in page %}
     <tr class="{% if p.is_low %}table-warning{% endif %}">
-      <td class="fw-semibold">{{ p.name }}{% if not p.is_active %} <span class="badge text-bg-secondary">off</span>{% endif %}</td>
+      <td class="fw-semibold">{{ p.name }}{% if not p.is_active %} <span class="badge text-bg-secondary">off</span>{% endif %}
+        {% if p.barcode %}<div class="small text-muted fw-normal">{{ p.barcode }}</div>{% endif %}</td>
       <td class="small">{{ p.category|default:"" }}</td>
       {% if user.is_owner or user.is_warehouse %}<td class="num">{{ p.cost_price|money }}</td>{% endif %}
       <td class="num fw-semibold">{{ p.sale_price|money }}</td>
