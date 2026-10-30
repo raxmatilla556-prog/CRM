@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
@@ -6,7 +7,7 @@ from django.urls import reverse
 
 from core.models import User
 from inventory.forms import ProductForm
-from inventory.models import Product
+from inventory.models import Product, Receipt
 from sales.models import Sale, Shift
 
 
@@ -55,6 +56,50 @@ class BarcodeFormTests(TestCase):
         form = self.form('0' * 65)
         self.assertFalse(form.is_valid())
         self.assertIn('barcode', form.errors)
+
+
+class ProductStockEntryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='stock-editor', role=User.Role.WAREHOUSE)
+        self.client.force_login(self.user)
+        self.data = {
+            'name': 'Bodring', 'barcode': '', 'unit': 'kg', 'cost_price': '9000',
+            'sale_price': '10000', 'min_qty': '5', 'is_active': 'on', 'action': 'add_stock',
+        }
+
+    def test_new_kg_product_flows_to_receipt_and_fractional_stock_transfer(self):
+        response = self.client.post(reverse('inventory:product_create'), self.data)
+        product = Product.objects.get(name='Bodring')
+        self.assertEqual(product.total_qty, 0)
+        self.assertFalse(Receipt.objects.exists())
+        self.assertRedirects(response, f"{reverse('inventory:receipt_create')}?product={product.pk}")
+        page = self.client.get(response.url)
+        self.assertEqual(page.context['initial_product']['id'], product.pk)
+        self.assertEqual(page.context['initial_product']['unit'], 'kg')
+        self.assertEqual(page.context['initial_product']['cost_price'], '9000.00')
+        response = self.client.post(reverse('inventory:receipt_create'), {
+            'product': [product.pk], 'qty': ['25,5'], 'cost': ['9000'],
+            'sale_price': ['10000'], 'expiry': [''],
+        })
+        self.assertEqual(response.status_code, 302)
+        product.refresh_from_db()
+        self.assertEqual(product.warehouse_qty, Decimal('25.5'))
+        self.assertEqual(product.store_qty, 0)
+        self.assertEqual(Receipt.objects.get().total_cost, Decimal('229500'))
+        self.client.post(reverse('inventory:transfer'), {
+            'product': product.pk, 'from_location': 'warehouse', 'qty': '10.25',
+        })
+        product.refresh_from_db()
+        self.assertEqual(product.store_qty, Decimal('10.25'))
+        self.assertEqual(product.warehouse_qty, Decimal('15.25'))
+
+    def test_editing_and_opening_receipt_preserves_existing_stock(self):
+        product = Product.objects.create(name='Bodring', unit='kg', store_qty=3, warehouse_qty=10)
+        response = self.client.post(reverse('inventory:product_edit', args=[product.pk]), self.data)
+        self.assertRedirects(response, f"{reverse('inventory:receipt_create')}?product={product.pk}")
+        product.refresh_from_db()
+        self.assertEqual((product.store_qty, product.warehouse_qty), (3, 10))
+        self.assertFalse(Receipt.objects.exists())
 
 
 @override_settings(TELEGRAM_BOT_TOKEN='', TELEGRAM_OWNER_CHAT_ID='')

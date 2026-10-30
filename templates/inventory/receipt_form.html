@@ -6,6 +6,11 @@
   <a href="{% url 'inventory:product_create' %}?back=receipt" class="btn btn-outline-secondary"><i class="bi bi-plus-lg"></i> {% t "Yangi tovar" %}</a>
 </div>
 {% for e in errors %}<div class="alert alert-danger py-2">{{ e }}</div>{% endfor %}
+<div class="alert alert-info small">
+  {% t "Miqdorni tanlangan birlikda kiriting: masalan, 25.5 kg. Narxlar 1 birlik uchun." %}
+  {% t "Kirim omborga qo'shiladi. Kassada sotish uchun tovarni do'konga ko'chiring." %}
+</div>
+{% if initial_product %}{{ initial_product|json_script:"initial-product" }}{% endif %}
 <form method="post" id="receipt-form">{% csrf_token %}
   <div class="card mb-3"><div class="card-body row g-2">
     <div class="col-md-4">
@@ -45,7 +50,10 @@
       <input type="hidden" name="product">
       <small class="text-muted meta"></small>
     </div></td>
-    <td><input name="qty" class="form-control form-control-sm" inputmode="decimal" style="width:90px"></td>
+    <td><div class="input-group input-group-sm" style="width:140px">
+      <input name="qty" class="form-control" inputmode="decimal" placeholder="0" aria-label="{% t 'Miqdor' %}">
+      <span class="input-group-text unit">—</span>
+    </div></td>
     <td><input name="cost" class="form-control form-control-sm" inputmode="decimal" style="width:110px"></td>
     <td><input name="sale_price" class="form-control form-control-sm" inputmode="decimal" style="width:110px"></td>
     <td><input name="expiry" type="date" class="form-control form-control-sm"></td>
@@ -70,16 +78,17 @@ function recalc() {
   document.getElementById('grand').textContent = App.money(grand);
 }
 
-function addRow() {
+function addRow(product = null) {
   const tr = tpl.content.firstElementChild.cloneNode(true);
   rows.appendChild(tr);
-  new ProductPicker(tr.querySelector('.picker'), {
+  const picker = new ProductPicker(tr.querySelector('.picker'), {
     url,
     renderMeta: p => `{% t "Omborda" %}: ${App.qty(p.warehouse_qty)}`,
     onSelect: p => {
       tr.querySelector('[name=cost]').value = App.num(p.cost_price) || '';
       tr.querySelector('[name=sale_price]').value = App.num(p.sale_price) || '';
       tr.querySelector('.meta').textContent = `{% t "Omborda" %}: ${App.qty(p.warehouse_qty)} ${p.unit}`;
+      tr.querySelector('.unit').textContent = p.unit;
       tr.querySelector('[name=qty]').focus();
       if (tr === rows.lastElementChild) addRow();
       recalc();
@@ -87,9 +96,12 @@ function addRow() {
   });
   tr.querySelector('.remove').addEventListener('click', () => { tr.remove(); recalc(); });
   tr.querySelectorAll('[name=qty],[name=cost]').forEach(i => i.addEventListener('input', recalc));
+  if (product) picker.select(product);
   return tr;
 }
-addRow().querySelector('[data-picker-input]').focus();
+const initialProduct = document.getElementById('initial-product');
+if (initialProduct) addRow(JSON.parse(initialProduct.textContent));
+else addRow().querySelector('[data-picker-input]').focus();
 document.getElementById('add-row').addEventListener('click', () => addRow().querySelector('[data-picker-input]').focus());
 // Picker ichida Enter bosilganda formani yubormaslik
 document.getElementById('receipt-form').addEventListener('keydown', e => {

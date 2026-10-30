@@ -17,7 +17,12 @@ class ProductForm(StyledFormMixin, forms.ModelForm):
                 'autocomplete': 'off', 'spellcheck': 'false', 'data-barcode-input': '1',
             }),
         }
-        help_texts = {'barcode': 'Ixtiyoriy. Maydonni tanlab skanerlang yoki kodni yozing.'}
+        help_texts = {
+            'barcode': 'Ixtiyoriy. Maydonni tanlab skanerlang yoki kodni yozing.',
+            'cost_price': "1 o'lchov birligi uchun tannarx. Masalan, kg tanlansa — 1 kg uchun.",
+            'sale_price': "1 o'lchov birligi uchun sotuv narxi. Masalan, kg tanlansa — 1 kg uchun.",
+            'min_qty': "Bu mavjud miqdor emas. Qoldiq shu chegaraga tushganda ogohlantirish chiqadi.",
+        }
         error_messages = {'barcode': {'unique': 'Bu shtrix-kod boshqa tovarga biriktirilgan.'}}
 
     def clean_barcode(self):

@@ -6,8 +6,9 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
@@ -71,7 +72,12 @@ def product_edit(request, pk=None):
         else:
             log_action(request.user, f"Tovar qo‘shildi: {product.name} ({fmt_money(product.sale_price)} so‘m)")
         messages.success(request, tr('Saqlandi'))
-        return redirect(request.GET.get('back') == 'receipt' and 'inventory:receipt_create' or 'inventory:stock')
+        if request.POST.get('action') == 'add_stock' or request.GET.get('back') == 'receipt':
+            if product.is_active:
+                return redirect(f"{reverse('inventory:receipt_create')}?product={product.pk}")
+            messages.error(request, tr("Miqdor kiritish uchun tovarni faol qiling."))
+            return redirect('inventory:product_edit', pk=product.pk)
+        return redirect('inventory:stock')
     return render(request, 'inventory/product_form.html', {
         'form': form, 'instance': instance,
         'can_delete': instance is not None and not _has_history(instance),
@@ -157,6 +163,18 @@ def receipt_list(request):
 @warehouse_required
 def receipt_create(request):
     errors = []
+    initial_product = None
+    if request.method == 'GET' and request.GET.get('product'):
+        try:
+            product_id = int(request.GET['product'])
+        except (TypeError, ValueError):
+            raise Http404
+        product = get_object_or_404(Product, pk=product_id, is_active=True)
+        initial_product = {
+            'id': product.pk, 'name': product.name, 'unit': product.unit,
+            'cost_price': str(product.cost_price), 'sale_price': str(product.sale_price),
+            'warehouse_qty': str(product.warehouse_qty),
+        }
     if request.method == 'POST':
         ids = request.POST.getlist('product')
         qtys = request.POST.getlist('qty')
@@ -202,7 +220,9 @@ def receipt_create(request):
                 log_action(request.user, f"Kirim #{receipt.pk}, sotuv narxi o‘zgardi: {'; '.join(price_changes)}")
             messages.success(request, tr('Kirim saqlandi'))
             return redirect('inventory:receipt_detail', pk=receipt.pk)
-    return render(request, 'inventory/receipt_form.html', {'suppliers': Supplier.objects.all(), 'errors': errors})
+    return render(request, 'inventory/receipt_form.html', {
+        'suppliers': Supplier.objects.all(), 'errors': errors, 'initial_product': initial_product,
+    })
 
 
 @warehouse_required

@@ -40,6 +40,15 @@ Aniq kod topilsa tovar savatga qo'shiladi; takroriy skan miqdorni bittaga oshira
 Nom bilan qidiruv ham ishlaydi. Qidiruv tugamaguncha sotishni tasdiqlash bloklanadi.
 Kod bo'yicha qidirishni skanersiz ham kodni yozib **Enter** bosib tekshirish mumkin.
 
+## Tovar miqdorini kiritish
+
+Tovar formasida **Saqlash va miqdor kiritish** tugmasi kirim sahifasini shu tovar,
+uning narxlari va o'lchov birligi tanlangan holda ochadi. Masalan, `kg` uchun
+miqdorga `25.5` yoziladi; tannarx va sotuv narxi **1 kg uchun** kiritiladi.
+Kirim miqdori mavjud ombor qoldig'iga qo'shiladi. Kassada sotish uchun kerakli
+miqdorni **Ko'chirish → Ombor → Do'kon** orqali o'tkazing.
+**Minimal qoldiq** esa kam qolganini bildirish chegarasi, mavjud miqdor emas.
+
 ## Kassa smenasi
 
 Sotuvchi kassani ishlatishdan oldin smena ochadi (kassadagi boshlang'ich naqd), kun oxirida yopadi va

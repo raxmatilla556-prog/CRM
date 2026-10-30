@@ -75,6 +75,21 @@ RU = {
     'Tannarx': 'Себестоимость',
     'Sotuv narxi': 'Цена продажи',
     'Minimal qoldiq': 'Мин. остаток',
+    "1 o'lchov birligi uchun tannarx. Masalan, kg tanlansa — 1 kg uchun.":
+        'Себестоимость одной единицы. Если выбраны кг — за 1 кг.',
+    "1 o'lchov birligi uchun sotuv narxi. Masalan, kg tanlansa — 1 kg uchun.":
+        'Цена продажи одной единицы. Если выбраны кг — за 1 кг.',
+    'Bu mavjud miqdor emas. Qoldiq shu chegaraga tushganda ogohlantirish chiqadi.':
+        'Это не фактический остаток. При снижении до этого уровня появится предупреждение.',
+    "Miqdor kirim orqali qo'shiladi. Kiritilgan miqdor mavjud ombor qoldig'iga qo'shiladi.":
+        'Количество добавляется через приход. Введённое количество прибавится к текущему остатку на складе.',
+    'Saqlash va miqdor kiritish': 'Сохранить и указать количество',
+    'Miqdor kiritish uchun tovarni faol qiling.': 'Для ввода количества сделайте товар активным.',
+    'Miqdorni tanlangan birlikda kiriting: masalan, 25.5 kg. Narxlar 1 birlik uchun.':
+        'Введите количество в выбранных единицах, например 25.5 кг. Цены указываются за 1 единицу.',
+    "Kirim omborga qo'shiladi. Kassada sotish uchun tovarni do'konga ko'chiring.":
+        'Приход добавляется на склад. Для продажи переместите товар в магазин.',
+    "Do'konga ko'chirish": 'Переместить в магазин',
     'Qoldiq': 'Остаток',
     'Kam qolgan': 'Заканчивается',
     'Kam qolgan tovarlar': 'Заканчивающиеся товары',

@@ -17,4 +17,10 @@
     <tfoot><tr class="fw-bold"><td colspan="3">{% t "Jami" %}</td><td class="num">{{ receipt.total_cost|money }} {% t "so'm" %}</td><td></td></tr></tfoot>
   </table></div>
 </div>
+<div class="alert alert-info mt-3">
+  <div class="small mb-2">{% t "Kirim omborga qo'shiladi. Kassada sotish uchun tovarni do'konga ko'chiring." %}</div>
+  <a href="{% url 'inventory:transfer' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-arrow-left-right"></i> {% t "Do'konga ko'chirish" %}
+  </a>
+</div>
 {% endblock %}
